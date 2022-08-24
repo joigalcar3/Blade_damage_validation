@@ -1,7 +1,8 @@
 import os
 import shutil
-from change_file_names import change_file_name
-from separate_rpm import separate_rpm
+
+from .change_file_names import change_file_name
+from .separate_rpm import separate_rpm
 
 # Folders to work with
 in_folder = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\2nd Campaign" \
