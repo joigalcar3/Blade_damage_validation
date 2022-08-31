@@ -1,167 +1,79 @@
-# from ......Simulator.Blade_damage import Propeller
 import pandas as pd
-import numpy as np
+import os
 import matplotlib as mpl
 mpl.use('TkAgg')
-from Blade_damage.Propeller import Propeller
 from Blade_damage.user_input import *
 from Blade_damage.helper_func import *
+from plot_func import data_pd_plotter, rpm_error_plotter
 
-
-folder_files = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data" \
-              "\\2nd Campaign\\Data\\2_Pre-processed_data_files"
-folder_files_np = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data" \
-              "\\2nd Campaign\\Data\\2_Pre-processed_data_files\\No_propeller"
-folder_blade_damage = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Simulator" \
-                      "\\Blade_damage"
+# filename = "b0.csv"
+filename = "b0_a0_w0.csv"
 
 figure_number = 1
+
+df = pd.read_csv(os.path.join("Data_storage", filename))
 
 
 # User_input
 blade_damage = 0
-alpha_angle = 90
-wind_speed = 4
-rpm = 300
-switch_plot_experimental_validation = True
+wind_speed = 0
+rpm_lst = [300, 500, 700, 900, 1100]  # 300, 500, 700, 900, 1100
+switch_plot_alpha_angles = False
+switch_plot_rpms = True
+# data_file_name = "b0_rpms"
+data_file_name = "b0_a0_w0_rpms"
 
-# Obtain the information from the validation wind tunnel experiments
-# Obtain the wind uncorrected thrust and torque
-filename = f"b{blade_damage}_a{alpha_angle}_w{wind_speed}_r{rpm}.csv"
+if switch_plot_alpha_angles:
+    column_names = ["rpm", "blade_damage", "wind_speed", "Matlab_mu_T", "Matlab_std_T", "BET_mu_T",
+                    "BET_std_T", "Matlab_mu_N", "Matlab_std_N", "BET_mu_N", "BET_std_N"]
+    data_table = []
+    for rpm in rpm_lst:
+        data_row = [rpm, blade_damage, wind_speed]
 
-content = pd.read_csv(os.path.join(folder_files, filename))
+        # Retrieving the data
+        data_rpm = df[(df["blade_damage"] == blade_damage) & (df["wind_speed"] == wind_speed) & (df["rpm"] == rpm)]
+        alpha_angle = data_rpm["alpha_angle"].to_numpy()
 
-rpms = content["Motor Electrical Speed (rad/s)"]
-thrust = content['Thrust (N)']
-torque = content['Torque (N·m)']
-average_rpms = rpms.mean()
-mean_wind_uncorrected_thrust = thrust[thrust.notna()].mean()
-mean_wind_uncorrected_torque = torque[torque.notna()].mean()
-std_thrust = thrust[thrust.notna()].std()
-std_torque = torque[torque.notna()].std()
+        # Obtaining the thrust plots
+        corrected_experimental_T_data_mean = data_rpm["mean_wind_corrected_thrust"].to_numpy()
+        experimental_T_data_std = data_rpm["std_thrust"].to_numpy()
+        correction_experimental_T_data_std = data_rpm["std_wind_correction_thrust"].to_numpy()
+        matlab_T_data = data_rpm["Matlab_T"].to_numpy()
+        bet_T_data = data_rpm["BET_T"].to_numpy()
 
-print(f"The rpm mean: {average_rpms}")
-print("\n Experimental thrust and torque")
-print(f"The thrust mean: {mean_wind_uncorrected_thrust}")
-print(f"The thrust standard deviation: {std_thrust}")
-print("------------------------------------------------")
-print(f"The torque mean: {mean_wind_uncorrected_torque}")
-print(f"The torque standard deviation: {std_torque}")
+        error_bars = experimental_T_data_std + correction_experimental_T_data_std
 
-if switch_plot_experimental_validation:
-    plt.figure(figure_number)
-    figure_number += 1
-    plt.plot(rpms)
-    plt.title("Motor Electrical Speed (rad/s)")
-    plt.xlabel("Samples [-]")
-    plt.ylabel("RPMS [rad/s]")
-    plt.grid(True)
+        figure_number, matlab_mu_T, matlab_std_T, bet_mu_T, bet_std_T = \
+            data_pd_plotter(corrected_experimental_T_data_mean, matlab_T_data, bet_T_data,
+                            figure_number, plot_name=f"thrust_b{blade_damage}_w{wind_speed}_r{rpm}",
+                            data_type="T", validation_data_std=error_bars, alpha_angle=alpha_angle)
 
-    plt.figure(figure_number)
-    figure_number += 1
-    plt.plot(thrust, 'ro')
-    plt.title("Uncorrected Thrust (N)")
-    plt.xlabel("Samples [-]")
-    plt.ylabel("T [N]")
-    plt.grid(True)
+        data_row += [matlab_mu_T, matlab_std_T, bet_mu_T, bet_std_T]
+        # Obtaining the torque plots
+        corrected_experimental_N_data_mean = data_rpm["mean_wind_corrected_torque"].to_numpy()
+        experimental_N_data_std = data_rpm["std_torque"].to_numpy()
+        correction_experimental_N_data_std = data_rpm["std_wind_correction_torque"].to_numpy()
+        matlab_N_data = data_rpm["Matlab_N"].to_numpy()
+        bet_N_data = data_rpm["BET_N"].to_numpy()
 
-    plt.figure(figure_number)
-    figure_number += 1
-    plt.plot(torque, 'ro')
-    plt.title("Uncorrected Torque (Nm)")
-    plt.xlabel("Samples [-]")
-    plt.ylabel("\\tau [Nm]")
-    plt.grid(True)
+        error_bars = experimental_N_data_std + correction_experimental_N_data_std
 
-# Obtain the wind correction
-wind_correction_filename = f"a{alpha_angle}_w{wind_speed}.csv"
-wind_correction_filepath = os.path.join(folder_files_np, wind_correction_filename)
-wind_correction_content = pd.read_csv(wind_correction_filepath, skiprows=1)
-wind_correction_thrust = wind_correction_content['Thrust (N)']
-wind_correction_torque = wind_correction_content['Torque (N·m)']
+        figure_number, matlab_mu_N, matlab_std_N, bet_mu_N, bet_std_N = \
+            data_pd_plotter(corrected_experimental_N_data_mean, matlab_N_data, bet_N_data,
+                            figure_number, plot_name=f"torque_b{blade_damage}_w{wind_speed}_r{rpm}",
+                            data_type="N", validation_data_std=error_bars, alpha_angle=alpha_angle)
+        data_row += [matlab_mu_N, matlab_std_N, bet_mu_N, bet_std_N]
+        data_table.append(data_row)
 
-mean_wind_correction_thrust = wind_correction_thrust[wind_correction_thrust.notna()].mean()
-mean_wind_correction_torque = wind_correction_torque[wind_correction_torque.notna()].mean()
-std_wind_correction_thrust = wind_correction_thrust[wind_correction_thrust.notna()].std()
-std_wind_correction_torque = wind_correction_torque[wind_correction_torque.notna()].std()
-print("\n Wind corrections thrust and torque")
-print(f"The thrust mean: {mean_wind_correction_thrust}")
-print(f"The thrust standard deviation: {std_wind_correction_thrust}")
-print("------------------------------------------------")
-print(f"The torque mean: {mean_wind_correction_torque}")
-print(f"The torque standard deviation: {std_wind_correction_torque}")
+    df_rpms = pd.DataFrame(data=data_table, columns=column_names)
+    df_rpms.to_csv(os.path.join("Data_storage", f"{data_file_name}.csv"), index=False)
+if switch_plot_rpms:
+    df_rpms = pd.read_csv(os.path.join("Data_storage", f"{data_file_name}.csv"))
+    figure_number = rpm_error_plotter(figure_number, df_rpms, plot_name=f"error_b{blade_damage}_w{wind_speed}")
 
-if switch_plot_experimental_validation:
-    plt.figure(figure_number)
-    figure_number += 1
-    plt.plot(wind_correction_thrust, "ro")
-    plt.title("Wind thrust corrections (N)")
-    plt.xlabel("Samples [-]")
-    plt.ylabel("T [N]")
-    plt.grid(True)
-
-    plt.figure(figure_number)
-    figure_number += 1
-    plt.plot(wind_correction_torque, "ro")
-    plt.title("Wind Torque corrections (Nm)")
-    plt.xlabel("Samples [-]")
-    plt.ylabel("\\tau [Nm]")
-    plt.grid(True)
-
-# Apply the wind correction
-mean_wind_corrected_thrust = mean_wind_uncorrected_thrust-mean_wind_correction_thrust
-mean_wind_corrected_torque = mean_wind_uncorrected_torque-mean_wind_correction_torque
-print("\n Wind corrected thrust and torque")
-print(f"The thrust mean: {mean_wind_corrected_thrust}")
-print("------------------------------------------------")
-print(f"The torque mean: {mean_wind_corrected_torque}")
+plt.show()
 
 
-# Obtain the information from the blade damage model
-# Create the propeller and the blades
-
-propeller = Propeller(0, n_blades, chord_lengths_rt_lst, length_trapezoids_rt_lst, radius_hub, propeller_mass,
-                      percentage_hub_m, angle_first_blade, start_twist, finish_twist,
-                      broken_percentage=percentage_broken_blade_length, plot_chords_twist=switch_chords_twist_plotting)
-propeller.create_blades()
-
-# ----------------------------------------------------------------------------------------------------------------------
-# Compute the location of the center of gravity of the propeller and the BladeSection chords
-cg_location = propeller.compute_cg_location()
-average_chords, segment_chords = compute_average_chords(chord_lengths_rt_lst, length_trapezoids_rt_lst, n_blade_segment_lst[0])
 
 
-body_velocity = np.array([[wind_speed*np.cos(np.deg2rad(alpha_angle)), 0, -wind_speed*np.sin(np.deg2rad(alpha_angle))]]).T
-T, N = propeller.compute_lift_torque_matlab(body_velocity, pqr, rpm)
-
-# ----------------------------------------------------------------------------------------------------------------------
-# Put all the forces and moments together. The output is the actual thrust and moments generated by the prop
-# Local input
-n_blade_segment = 100
-dt = 0.01
-
-# Computations
-n_points = int(total_time/dt + 1)
-F_healthy_lst = np.zeros((3, n_points))
-M_healthy_lst = np.zeros((3, n_points))
-rotation_angle_lst = np.zeros(n_points)
-rotation_angle = 0
-propeller.set_rotation_angle(0)
-for i in range(n_points):
-    if not i % 10:
-        print(f'Iteration {i} out of {n_points-1}')
-
-    F, M = propeller.compute_mass_aero_healthy_FM(n_blade_segment, omega, attitude, cla_coeffs, cda_coeffs,
-                                                  body_velocity, pqr, rho)
-
-    F_healthy_lst[:, i] = F.flatten()
-    M_healthy_lst[:, i] = M.flatten()
-    rotation_angle_lst[i] = rotation_angle
-    rotation_angle = propeller.update_rotation_angle(omega, dt)
-
-# Plot the forces and moments
-plot_FM(np.arange(0, total_time+dt, dt), rotation_angle_lst, F_healthy_lst, M_healthy_lst, mass_aero='t')
-
-modelled_healty_T = np.mean(F_healthy_lst[-1, :])
-modelled_healty_N = np.mean(M_healthy_lst[-1, :])
 
