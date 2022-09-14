@@ -15,7 +15,8 @@ folder_files_np = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Exec
 
 
 def data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed_lst, rpm_lst,
-                    switch_plot_experimental_validation, switch_plot_models, switch_wind_correction, data_file_name):
+                    switch_plot_experimental_validation, switch_plot_models, switch_wind_correction, data_file_name,
+                    switch_plot_fft=False, switch_plot_sinusoid_id=False):
     data_table = []
 
     if blade_damage_lst[0] == 0:
@@ -39,6 +40,7 @@ def data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed
             for wind_speed_counter, wind_speed in enumerate(wind_speed_lst):
                 for rpm_counter, rpm in enumerate(rpm_lst):
                     data_row = [blade_damage, alpha_angle, wind_speed, rpm]
+
                     # Obtain the information from the validation wind tunnel experiments
                     # Obtain the wind uncorrected thrust and torque
                     figure_number, content, average_rpms, mean_wind_uncorrected_thrust, std_thrust, \
@@ -58,7 +60,7 @@ def data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed
                                                switch_wind_correction=switch_wind_correction,
                                                switch_plot_experimental_validation=
                                                switch_plot_experimental_validation,
-                                               switch_print_info=True)
+                                               switch_print_info=False)
 
                     data_row += [mean_wind_correction_thrust, std_wind_correction_thrust,
                                  mean_wind_correction_torque, std_wind_correction_torque]
@@ -74,10 +76,6 @@ def data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed
                     if blade_damage == 0:
                         mean_wind_corrected_thrust = mean_wind_uncorrected_thrust - mean_wind_correction_thrust
                         mean_wind_corrected_torque = mean_wind_uncorrected_torque - mean_wind_correction_torque
-                        print("\n Wind corrected thrust and torque")
-                        print(f"The thrust mean: {mean_wind_corrected_thrust}")
-                        print("------------------------------------------------")
-                        print(f"The torque mean: {mean_wind_corrected_torque}")
 
                         BET_T = np.mean(BET_thrust)
                         BET_N = np.mean(BET_torque)
@@ -89,17 +87,26 @@ def data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed
                         # Obtaining the mean and amplitude of the thrust
                         figure_number, BET_mean_T, BET_amplitude_T, mean_wind_corrected_thrust, \
                         amplitude_wind_corrected_thrust = \
-                            damaged_prop_signal_id(figure_number, content, "T", mean_wind_correction_thrust, BET_thrust)
+                            damaged_prop_signal_id(figure_number, content, "T", mean_wind_correction_thrust, BET_thrust,
+                                                   switch_plot_fft=switch_plot_fft,
+                                                   switch_plot_sinusoid_id=switch_plot_sinusoid_id)
 
                         # Obtaining the mean and amplitude of the torque
                         figure_number, BET_mean_N, BET_amplitude_N, mean_wind_corrected_torque, \
                         amplitude_wind_corrected_torque = \
-                            damaged_prop_signal_id(figure_number, content, "N", mean_wind_correction_torque, BET_torque)
+                            damaged_prop_signal_id(figure_number, content, "N", mean_wind_correction_torque, BET_torque,
+                                                   switch_plot_fft=switch_plot_fft,
+                                                   switch_plot_sinusoid_id=switch_plot_sinusoid_id)
 
                         data_row += [mean_wind_corrected_thrust, mean_wind_corrected_torque,
                                      amplitude_wind_corrected_thrust, amplitude_wind_corrected_torque,
                                      BET_mean_T, BET_mean_N,
                                      BET_amplitude_T, BET_amplitude_N]
+
+                    print("\n Wind corrected thrust and torque")
+                    print(f"The thrust mean: {mean_wind_corrected_thrust}")
+                    print("------------------------------------------------")
+                    print(f"The torque mean: {mean_wind_corrected_torque}")
 
                     data_table.append(data_row)
 

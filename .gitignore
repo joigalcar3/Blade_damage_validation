@@ -135,3 +135,5 @@ Old/
 Plots_storage/
 
 Data_storage/
+
+*.html

@@ -9,7 +9,8 @@ from frequency_extraction import frequency_extraction
 from helper_funcs import compute_BET_signals, pso_cost_function, obtain_wind_correction, experimental_data_extraction
 
 
-def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_model_signal):
+def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_model_signal, switch_plot_fft=False,
+                           switch_plot_sinusoid_id=False):
     """
     Obtain the mean and the amplitude of the model and experimental signals
     :param fn: the number of the next figure to be plotted
@@ -17,6 +18,8 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
     :param signal_name: whether the signal is thrust or torque
     :param mean_wind_correction: the bias correction function due to the wind impinging the test stand
     :param BET_model_signal: the BET signal
+    :param switch_plot_fft: whether the fft of the BET signal should be plotted
+    :param switch_plot_sinusoid_id: whether the identified sinusoid should be plotted
     :return:
     """
     time = content['Time (s)']
@@ -40,22 +43,23 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
     BET_amplitude = (np.max(BET_model_signal) - np.min(BET_model_signal)) / 2
     if np.max(BET_model_signal) - np.min(BET_model_signal) != 0:
         fn, largest_frequency_wrench_signal = frequency_extraction(fn, BET_model_signal,
-                                                                   dt, switch_plot_fft=True, n_points=None)
+                                                                   dt, switch_plot_fft=switch_plot_fft, n_points=None)
         ub = [0.5, 2 * np.pi]
         lb = [0, 0]
         kwargs = {"sinusoid_f": largest_frequency_wrench_signal, "time_lst": sampled_times,
                   "data_lst": detrended_wrench_signal, "mean_sinusoid": wrench_signal_mean}
         xopt, fopt = pso(pso_cost_function, lb, ub, debug=True, swarmsize=5000, maxiter=20, kwargs=kwargs)
 
-        plt.figure(fn)
-        fn += 1
-        plt.plot(sampled_times, wrench_signal_numpy, "bo")  # Plotting the data gathered
-        plt.plot(sampled_times, detrended_wrench_signal, "ro")  # Plotting the detrended data gathered
-        plt.plot(np.arange(0, total_time + dt, dt), BET_model_signal, "g--")  # Plotting the data from the model
-        plt.plot(np.arange(0, np.max(sampled_times), dt), wrench_signal_mean +
-                 xopt[0] * np.sin(largest_frequency_wrench_signal * np.arange(0, np.max(sampled_times), dt) + xopt[1]),
-                 "r-")  # Plotting the approximated signal
-        plt.grid(True)
+        if switch_plot_sinusoid_id:
+            plt.figure(fn)
+            fn += 1
+            plt.plot(sampled_times, wrench_signal_numpy, "bo", label="Data")  # Plotting the data gathered
+            plt.plot(sampled_times, detrended_wrench_signal, "ro", label="Detrended data")  # Plotting the detrended data gathered
+            plt.plot(np.arange(0, total_time + dt, dt), BET_model_signal, "g--")  # Plotting the data from the model
+            plt.plot(np.arange(0, np.max(sampled_times), dt), wrench_signal_mean +
+                     xopt[0] * np.sin(largest_frequency_wrench_signal * np.arange(0, np.max(sampled_times), dt) + xopt[1]),
+                     "r-")  # Plotting the approximated signal
+            plt.grid(True)
 
         wrench_signal_amplitude = xopt[0]
     else:
