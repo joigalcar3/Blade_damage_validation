@@ -6,17 +6,34 @@ on the damage and the wind speed.
 
 from data_extraction import data_extraction
 from data_analysis import data_analysis, data_damage_comparison
+from compute_rpm_data_statistics import compute_rpm_data_statistics
 
 # User input
 b = 25  # blade damage
-w = 0  # wind speed
+w = 12  # wind speed
+switch_data_extraction = True  # whether the data extraction from the pre-processed data should be carried out
+switch_data_statistics = False  # whether the computation of data statistics is enabled
+switch_plotting = True
 switch_error_percentage = False  # whether the error should be relative (True) or absolute (False)
 user_choice = False  # whether the user choice should be run instead of the predetermined configurations
-switch_data_extraction = True  # whether the data extraction from the pre-processed data should be carried out
 switch_data_analysis = False  # whether the data should be analysed to create the plots
 switch_val_error_bars = True  # whether the validation error bars should be plotted
 switch_plot_fft = False  # whether to plot the fft of the BET signal for sinusoid identification
 switch_plot_sinusoid_id = False  # whether to plot the identified sinusoid
+id_type = "LS"
+
+# Inputs plotting
+plot_single_damage = False
+plot_single_windspeed = True
+switch_amplitude = False
+switch_plot_alpha_angles = True
+switch_subtract_no_damage = True
+switch_plot_stds = False
+filename_input_data = f"b{b}"
+# filename_input_data = "b25_a90_w0"
+filename_input_stat = f"b{b}_rpms"
+# filename_input_stat = "b25_a90_w0_rpms"
+comment = ""
 
 switch_blade_damage_comparison = False  # whether the results with different blade damages should be plotted
 blade_damage_compare = [0, 10, 25]  # the blade damages to compare
@@ -31,20 +48,23 @@ if switch_error_percentage:
 # Code for the extraction of all the data when the drone is not damaged and the wind is not equal to zero
 if b == 0 and w != 0 and not user_choice:
     # Data extraction
-    if switch_data_extraction:
-        blade_damage_lst = [b]  # 0, 10, 25
-        alpha_angle_lst = [0, 15, 30, 45, 60, 75, 90]   # 0, 15, 30, 45, 60, 75, 90
-        wind_speed_lst = [2, 4, 6, 9, 12]  # (0), 2, 4, 6, 9, 12
-        rpm_lst = [300, 500, 700, 900, 1100]  # 300, 500, 700, 900, 1100
-        switch_plot_experimental_validation = False
-        switch_plot_models = False
-        switch_wind_correction = True
-        data_file_name = f"b{blade_damage_lst[0]}"
+    blade_damage_lst = [b]  # 0, 10, 25
+    alpha_angle_lst = [0, 15, 30, 45, 60, 75, 90]   # 0, 15, 30, 45, 60, 75, 90
+    wind_speed_lst = [2, 4, 6, 9, 12]  # (0), 2, 4, 6, 9, 12
+    rpm_lst = [300, 500, 700, 900, 1100]  # 300, 500, 700, 900, 1100
+    switch_plot_experimental_validation = False
+    switch_plot_models = False
+    switch_wind_correction = True
+    data_file_name = f"b{blade_damage_lst[0]}"
 
+    if switch_data_extraction:
         figure_number = data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed_lst, rpm_lst,
                                         switch_plot_experimental_validation, switch_plot_models, switch_wind_correction,
                                         data_file_name, switch_plot_fft=switch_plot_fft,
-                                        switch_plot_sinusoid_id=switch_plot_sinusoid_id)
+                                        switch_plot_sinusoid_id=switch_plot_sinusoid_id, id_type=id_type)
+
+    if switch_data_statistics:
+        compute_rpm_data_statistics(data_file_name, blade_damage=b)
 
     # Data analysis
     if switch_data_analysis:
@@ -79,7 +99,7 @@ elif b == 0 and w == 0 and not user_choice:
             figure_number = data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed_lst, rpm_lst,
                                             switch_plot_experimental_validation, switch_plot_models,
                                             switch_wind_correction, data_file_name, switch_plot_fft=switch_plot_fft,
-                                            switch_plot_sinusoid_id=switch_plot_sinusoid_id)
+                                            switch_plot_sinusoid_id=switch_plot_sinusoid_id, id_type=id_type)
 
     # Data analysis
     if switch_data_analysis:
@@ -102,9 +122,9 @@ if b != 0 and w != 0 and not user_choice:
     # Data extraction
     if switch_data_extraction:
         blade_damage_lst = [b]  # 0, 10, 25
-        alpha_angle_lst = [0, 15, 30, 45, 60, 75, 90]   # 0, 15, 30, 45, 60, 75, 90
-        wind_speed_lst = [2, 4, 6, 9, 12]  # (0), 2, 4, 6, 9, 12
-        rpm_lst = [300, 500, 700, 900, 1100]  # 300, 500, 700, 900, 1100
+        alpha_angle_lst = [45]   # 0, 15, 30, 45, 60, 75, 90
+        wind_speed_lst = [12]  # (0), 2, 4, 6, 9, 12
+        rpm_lst = [700, 900, 1100]  # 300, 500, 700, 900, 1100
         switch_plot_experimental_validation = False
         switch_plot_models = False
         switch_wind_correction = True
@@ -113,7 +133,7 @@ if b != 0 and w != 0 and not user_choice:
         figure_number = data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed_lst, rpm_lst,
                                         switch_plot_experimental_validation, switch_plot_models, switch_wind_correction,
                                         data_file_name, switch_plot_fft=switch_plot_fft,
-                                        switch_plot_sinusoid_id=switch_plot_sinusoid_id)
+                                        switch_plot_sinusoid_id=switch_plot_sinusoid_id, id_type=id_type)
 
     # Data analysis
     if switch_data_analysis:
@@ -161,7 +181,7 @@ elif b != 0 and w == 0 and not user_choice:
             figure_number = data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed_lst, rpm_lst,
                                             switch_plot_experimental_validation, switch_plot_models,
                                             switch_wind_correction, data_file_name, switch_plot_fft=switch_plot_fft,
-                                            switch_plot_sinusoid_id=switch_plot_sinusoid_id)
+                                            switch_plot_sinusoid_id=switch_plot_sinusoid_id, id_type=id_type)
 
     # Data analysis
     if switch_data_analysis:
@@ -209,7 +229,7 @@ elif user_choice:
         figure_number = data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed_lst, rpm_lst,
                                         switch_plot_experimental_validation, switch_plot_models, switch_wind_correction,
                                         data_file_name, switch_plot_fft=switch_plot_fft,
-                                        switch_plot_sinusoid_id=switch_plot_sinusoid_id)
+                                        switch_plot_sinusoid_id=switch_plot_sinusoid_id, id_type=id_type)
 
     # Data analysis
     if switch_data_analysis:

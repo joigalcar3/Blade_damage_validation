@@ -5,7 +5,19 @@ from sklearn.neighbors import KernelDensity
 import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+
+np.random.seed(1)
+
+# Matplotlib settings
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['font.family'] = 'Arial'
+mpl.rcParams['grid.alpha'] = 0.5
+# mpl.use('Agg')
 mpl.use('TkAgg')
+font = {'size': 42,
+        'family': "Arial"}
+mpl.rc('font', **font)
 
 
 def separate_rpm(filename, figure_number, original_folder, destination_folder, plotting=False):
@@ -37,7 +49,7 @@ def separate_rpm(filename, figure_number, original_folder, destination_folder, p
     if plotting:
         plt.figure(figure_number)
         figure_number += 1
-        plt.plot(escs, alpha=0.5)
+        plt.plot(content['Time (s)'], escs, alpha=0.5, linewidth=4)
     constant_rpm_intervals = []
     constant_rpm_timestamps = []
     for esc in escs_common:
@@ -56,12 +68,13 @@ def separate_rpm(filename, figure_number, original_folder, destination_folder, p
         constant_rpm_intervals.append(esc_section)
         constant_rpm_timestamps.append(np.arange(left_index, esc_indeces[-1] + 1))
         if plotting:
-            plt.plot(np.arange(left_index, esc_indeces[-1] + 1), esc_section, linestyle='--', label=f"{esc}")
+            plt.plot(content['Time (s)'][np.arange(left_index, esc_indeces[-1] + 1)], esc_section, linestyle='--', label=f"{esc}",
+                     linewidth=4)
 
     # Plotting the intervals in the ESC domain
     rpms = [300, 500, 700, 900, 1100]
     if plotting:
-        plt.title("Selected timestamps for analysis")
+        # plt.title("Selected timestamps for analysis")
         plt.ylabel("ESC value [µs]")
         plt.xlabel("Timestamp [s]")
         plt.grid(True)
@@ -70,14 +83,17 @@ def separate_rpm(filename, figure_number, original_folder, destination_folder, p
         # Plotting the intervals in the motor rotations domain
         plt.figure(figure_number)
         figure_number += 1
-        plt.plot(content["Motor Electrical Speed (rad/s)"], alpha=0.5)
+        plt.plot(content['Time (s)'], content["Motor Electrical Speed (rad/s)"], alpha=0.5, linewidth=4)
         for counter, rpm_interval in enumerate(constant_rpm_timestamps):
-            plt.plot(content["Motor Electrical Speed (rad/s)"][rpm_interval], linestyle='--', label=str(rpms[counter]))
-        plt.title("Selected rpm intervals for analysis")
+            plt.plot(content['Time (s)'][rpm_interval], content["Motor Electrical Speed (rad/s)"][rpm_interval], linestyle='--', label=str(rpms[counter]),
+                     linewidth=4)
+        # plt.title("Selected rpm intervals for analysis")
         plt.ylabel("Motor Electrical Speed (rad/s)")
         plt.xlabel("Timestamp [s]")
         plt.grid(True)
         plt.legend()
+
+
 
     for count, rpm_interval in enumerate(constant_rpm_timestamps):
         data_interval = content[rpm_interval[0]:rpm_interval[-1] + 1]
@@ -97,8 +113,8 @@ if __name__ == "__main__":
     df = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\2nd Campaign\\" \
          "Data\\Test_files_correct_names_separated"
     a = 90
-    w = 0
-    b = 0
+    w = 12
+    b = 25
     switch_plotting = True
     switch_multiple_file = False
 

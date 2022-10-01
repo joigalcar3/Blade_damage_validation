@@ -16,7 +16,7 @@ folder_files_np = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Exec
 
 def data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed_lst, rpm_lst,
                     switch_plot_experimental_validation, switch_plot_models, switch_wind_correction, data_file_name,
-                    switch_plot_fft=False, switch_plot_sinusoid_id=False):
+                    switch_plot_fft=False, switch_plot_sinusoid_id=False, id_type="PSO"):
     data_table = []
 
     if blade_damage_lst[0] == 0:
@@ -89,14 +89,14 @@ def data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed
                         amplitude_wind_corrected_thrust = \
                             damaged_prop_signal_id(figure_number, content, "T", mean_wind_correction_thrust, BET_thrust,
                                                    switch_plot_fft=switch_plot_fft,
-                                                   switch_plot_sinusoid_id=switch_plot_sinusoid_id)
+                                                   switch_plot_sinusoid_id=switch_plot_sinusoid_id, id_type=id_type)
 
                         # Obtaining the mean and amplitude of the torque
                         figure_number, BET_mean_N, BET_amplitude_N, mean_wind_corrected_torque, \
                         amplitude_wind_corrected_torque = \
                             damaged_prop_signal_id(figure_number, content, "N", mean_wind_correction_torque, BET_torque,
                                                    switch_plot_fft=switch_plot_fft,
-                                                   switch_plot_sinusoid_id=switch_plot_sinusoid_id)
+                                                   switch_plot_sinusoid_id=switch_plot_sinusoid_id, id_type=id_type)
 
                         data_row += [mean_wind_corrected_thrust, mean_wind_corrected_torque,
                                      amplitude_wind_corrected_thrust, amplitude_wind_corrected_torque,

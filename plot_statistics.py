@@ -39,14 +39,16 @@ wrench_names = {"T": "thrust", "N": "torque"}
 wrench_units = {"T": "N", "N": "Nm"}
 data_points = ["mu", "std", "m", "b", "tol"]
 models = ["Matlab", "BET"]
-red_color_hex = "#d62728"
-blue_color_hex = "#1f77b4"
-green_color_hex = "#2ca02c"
-colors_hex = [red_color_hex, blue_color_hex, green_color_hex]
-blue_color_rgb = [i / 255 for i in [31, 119, 180]]
-red_color_rgb = [i / 255 for i in [214, 39, 40]]
-green_color_rgb = [i / 255 for i in [44, 160, 44]]
-markers = ["o", "v", "s"]
+red_color_hex, red_color_rgb = "#d62728", [i / 255 for i in [31, 119, 180]]
+blue_color_hex, blue_color_rgb = "#1f77b4", [i / 255 for i in [214, 39, 40]]
+green_color_hex, green_color_rgb = "#2ca02c", [i / 255 for i in [44, 160, 44]]
+orange_color_hex, orange_color_rgb = '#ff7f0e', [i / 255 for i in [255, 127, 14]]
+purple_color_hex, purple_color_rgb = '#9467bd', [i / 255 for i in [148, 103, 189]]
+brown_color_hex, brown_color_rgb = '#8c564b', [i / 255 for i in [140, 86, 75]]
+pink_color_hex, pink_color_rgb = '#e377c2', [i / 255 for i in [227, 119, 194]]
+colors_hex = [red_color_hex, blue_color_hex, green_color_hex, orange_color_hex, purple_color_hex, brown_color_hex,
+              pink_color_hex]
+markers = ["o", "v", "s", "P", "*", "x", "<"]
 
 
 def plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind_speed_lst, rpm_lst,
@@ -80,10 +82,6 @@ def plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind
 
     # Whether the error computed is absolute or relative and the mean or amplitude are plotted
     dict_keys_txt, mean_or_amplitude, comment = check_amp_rel(switch_error_percentage, switch_amplitude, comment)
-    error_percentage_txt = dict_keys_txt["rel"]
-    amplitude_txt = dict_keys_txt["amp"]
-    mean_or_amplitude_mod = mean_or_amplitude["mod"]
-    mean_or_amplitude_val = mean_or_amplitude["val"]
 
     # Plot for every wind speed and rpm in their respective lists
     for wind_speed in wind_speed_lst:
@@ -105,32 +103,12 @@ def plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind
                 abbreviation = abbreviations[i]
                 wrench_name = wrench_names[abbreviation]
 
-                # model_stats = create_model_stats(model, data_rpm_data, data_rpm_stat, mean_or_amplitude, abbreviation,
-                #                                  wrench_name, switch_val_error_bars, switch_amplitude, dict_keys_txt)
-                error_bar = None
-
-                corrected_experimental_data_mean = \
-                    data_rpm_data[f"{mean_or_amplitude_val}_wind_corrected_{wrench_name}"].to_numpy()
-                if switch_val_error_bars and not switch_amplitude:
-                    experimental_data_std = data_rpm_data[f"std_{wrench_name}"].to_numpy()
-                    correction_experimental_data_std = data_rpm_data[f"std_wind_correction_{wrench_name}"].to_numpy()
-
-                    error_bar = experimental_data_std + correction_experimental_data_std
-
                 # Models data
                 models_stats = {}
                 for model in active_models:
-                    model_stats = {}
-                    model_name = model
-                    if "Matlab" in model:
-                        model_name = "Gray-box"
-                    for data_point in data_points:
-                        model_stats[f"{data_point}"] = \
-                            data_rpm_stat[
-                                f"{model}_{data_point}_{abbreviation}{amplitude_txt}{error_percentage_txt}"].to_numpy().item()
-                    model_stats["validation_data"] = corrected_experimental_data_mean
-                    model_stats["error_bar"] = error_bar
-                    model_stats["model_data"] = data_rpm_data[f"{model}{mean_or_amplitude_mod}_{abbreviation}"].to_numpy()
+                    model_stats, model_name = create_model_stats(model, data_rpm_data, data_rpm_stat, mean_or_amplitude,
+                                                                 abbreviation, wrench_name, switch_val_error_bars,
+                                                                 switch_amplitude, dict_keys_txt)
                     models_stats[f"{model_name} model"] = model_stats
 
                 # Location and name of the plots
@@ -158,8 +136,8 @@ def plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind
             for i in range(len(abbreviations)):
                 abbreviation = abbreviations[i]
                 rpms = data_stat["rpm"].to_numpy()
-                mus = data_stat[f"{model}_mu_{abbreviation}{amplitude_txt}{error_percentage_txt}"].to_numpy()
-                stds = data_stat[f"{model}_std_{abbreviation}{amplitude_txt}{error_percentage_txt}"].to_numpy()
+                mus = data_stat[f"{model}_mu_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
+                stds = data_stat[f"{model}_std_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
                 model_stats[abbreviation] = {"rpms": rpms, "mus": mus, "stds": stds, "blade_damage": blade_damage}
             models_stats[f"{model_name} model"] = model_stats
 
@@ -175,17 +153,22 @@ def plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind
     return figure_number
 
 
-def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_error_percentage=False):
+def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_error_percentage=False,
+                      switch_plot_stds=True, ncol=1):
     """
     Plot the evolution of the errors through different rpms with its mean and standard deviation
     :param figure_number: number of the figure to plot
     :param models_stats: the dictionary that contains the thrust and torque statistical information for plotting
     :param plot_name: the name of the plot that should be produced as output
     :param switch_error_percentage: whether the relative error is plotted instead of the absolute error
+    :param switch_plot_stds: whether the whiskers denoting the stds should be plotted
     :return:
     """
     f, ax_lst = plt.subplots(2, 1, sharex=True, gridspec_kw={'wspace': 0.5, 'hspace': 0.2}, num=figure_number)
     figure_number += 1
+    unique_blade_damages = set([models_stats[i][j]["blade_damage"]
+                                for i in models_stats.keys()
+                                for j in models_stats[i].keys()])
 
     # Plot the thrust errors
     for counter_ax, ax_name in enumerate(ax_lst):
@@ -195,23 +178,35 @@ def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_er
             wrench_data = models_stats[model_name][abbreviation]
             blade_damage = wrench_data["blade_damage"]
             rpms = wrench_data["rpms"]
-            ax_name.errorbar(rpms, wrench_data["mus"], yerr=wrench_data["stds"] * 1.96, color=colors_hex[counter_model],
-                             capsize=4, marker=markers[counter_model], alpha=0.5,
-                             label=f"{model_name}: {blade_damage}%")
+            if "%" in model_name or len(unique_blade_damages) == 1:
+                signal_label = model_name
+            else:
+                signal_label = f"{model_name}: {blade_damage}%"
+            if switch_plot_stds:
+                ax_name.errorbar(rpms, wrench_data["mus"], yerr=wrench_data["stds"] * 1.96,
+                                 color=colors_hex[counter_model], capsize=4, marker=markers[counter_model],
+                                 markersize=10, alpha=0.5, label=signal_label)
+            else:
+                ax_name.plot(rpms, wrench_data["mus"], color=colors_hex[counter_model], marker=markers[counter_model],
+                             markersize=10, alpha=0.5, label=signal_label)
 
         ax_name.grid(True)
         ax_name.ticklabel_format(axis="y", style="sci", scilimits=(0, 3))
         if switch_error_percentage:
             ax_name.set_ylabel(f"{abbreviation} error [%]")
+            # ax_name.set_ylabel(f"{abbreviation} $\Delta$error [%]")
         else:
             ax_name.set_ylabel(f"{abbreviation} error [{wrench_unit}]")
+            # ax_name.set_ylabel(f"{abbreviation} $\Delta$error [{wrench_unit}]")
         ax_name.yaxis.set_label_coords(-0.1, 0.5)
 
         if counter_ax == 0:
-            ax_name.legend(markerscale=3)
+            ax_name.legend(markerscale=2, ncol=ncol, loc=1)
+            ax_name.set_ylim((ax_name.get_ylim()[0], ax_name.get_ylim()[1] * 2))
         elif counter_ax == len(ax_lst) - 1:
             ax_name.set_xlabel("Propeller rotational speed [rad/s]")
             ax_name.set_xticks(rpms)
+
 
     f.subplots_adjust(left=0.125, top=0.94, right=0.98, bottom=0.17)
     f.set_size_inches(19.24, 10.55)
@@ -338,7 +333,7 @@ def data_pd_plotter(models_stats, figure_number, plot_name="dummy", data_type="T
     ax_pd.set_yticks([])
     original_ylim = ax_data.get_ylim()
     ax_data.set_ylim(top=(original_ylim[-1] - original_ylim[0]) * 0.35 + original_ylim[-1])
-    ax_data.legend(markerscale=3, scatterpoints=3, loc=2)
+    ax_data.legend(markerscale=2, scatterpoints=3, loc=2)
     ax_data.grid(True)
     ax_data.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
     ax_data.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
@@ -355,22 +350,23 @@ def data_pd_plotter(models_stats, figure_number, plot_name="dummy", data_type="T
     return figure_number
 
 
-def data_damage_comparison(figure_number, wind_speed, rpm_lst, switch_plot_alpha_angles, switch_plot_rpms,
-                           filenames, comment="", switch_error_percentage=False, switch_amplitude=False,
-                           switch_val_error_bars=True):
+def data_damage_comparison(figure_number, wind_speed_lst, rpm_lst, filenames, comment="", switch_plot_alpha_angles=True,
+                           switch_error_percentage=False, switch_amplitude=False, switch_val_error_bars=True,
+                           switch_subtract_no_damage=False, switch_plot_stds=False):
     """
     Method to create the same plots as in data analysis. However, instead of comparing Matlab and BET, it compares
     the performance of BET with different degrees of failure
     :param figure_number: the number of the next figure to plot
-    :param wind_speed: the speed of the wind tunnel
+    :param wind_speed_lst: the list of speeds of the wind tunnel
     :param rpm_lst: the list of rpms to consider
-    :param switch_plot_alpha_angles: whether the angles of the plane of rotation with respect to the flow should be
-    visible
-    :param switch_plot_rpms: to switch on a plot of the mean and standard error for the different rpms
     :param filenames: the names of the files that contain the data for the different blade damages
     :param comment: any comment to insert at the beginning of the plots file names
+    :param switch_plot_alpha_angles: whether the angles of the plane of rotation with respect to the flow should be
+    visible
     :param switch_error_percentage: whether the error should be plotted as relative instead of absolute
     :param switch_amplitude: whether the amplitude should be plotted instead of the mean
+    :param switch_plot_rpms: to switch on a plot of the mean and standard error for the different rpms
+    :param switch_plot_stds: whether the stds whickers are plotted
     :return:
     """
     # Obtaining the blade damages
@@ -379,7 +375,7 @@ def data_damage_comparison(figure_number, wind_speed, rpm_lst, switch_plot_alpha
         if "w" in filename:
             blade_damage = int(filename[filename.index("b") + 1:filename.index("_")])
         else:
-            blade_damage = int(filename[filename.index("b") + 1:filename.index(".")])
+            blade_damage = int(filename[filename.index("b") + 1:])
         blade_damages.append(blade_damage)
 
     # Whether the error computed is absolute or relative and the mean or amplitude are plotted
@@ -387,76 +383,157 @@ def data_damage_comparison(figure_number, wind_speed, rpm_lst, switch_plot_alpha
 
     # Creating the folder where the plots will be stored
     blade_damages_str = "_".join(str(i) for i in blade_damages)
-    folder_name = os.path.join(f"b{blade_damages_str}", f"w{wind_speed}")
-    if not os.path.exists(os.path.join("Plots_storage", folder_name)):
-        os.makedirs(os.path.join("Plots_storage", folder_name))
+    for wind_speed in wind_speed_lst:
+        folder_name = os.path.join(f"b{blade_damages_str}", f"w{wind_speed}")
+        if not os.path.exists(os.path.join("Plots_storage", folder_name)):
+            os.makedirs(os.path.join("Plots_storage", folder_name))
 
-    # Looping over the desired rpms
-    for rpm in rpm_lst:
-        # Obtaining the thrust plots
-        # Experimental data
-        for i in range(len(abbreviations)):
-            abbreviation = abbreviations[i]
-            wrench_name = wrench_names[abbreviation]
+        # Looping over the desired rpms
+        for rpm in rpm_lst:
+            # Obtaining the thrust plots
+            # Experimental data
+            for i in range(len(abbreviations)):
+                abbreviation = abbreviations[i]
+                wrench_name = wrench_names[abbreviation]
 
-            # Retrieving the data
-            models_stats = {}
-            for counter, filename in enumerate(filenames):
-                blade_damage = blade_damages[counter]
-                # Retrieving data files
-                df_stat = pd.read_csv(os.path.join("Data_storage", filename + "_rpms.csv"))
-                df_data = pd.read_csv(os.path.join("Data_storage", filename + ".csv"))
+                # Retrieving the data
+                models_stats = {}
+                for counter, filename in enumerate(filenames):
+                    blade_damage = blade_damages[counter]
 
-                # Retrieving specific data
-                data_rpm_stat = df_stat[(df_stat["blade_damage"] == blade_damage) &
-                                        (df_stat["wind_speed"] == wind_speed) & (df_stat["rpm"] == rpm)]
-                data_rpm_data = df_data[(df_data["blade_damage"] == blade_damage) &
-                                        (df_data["wind_speed"] == wind_speed) & (df_data["rpm"] == rpm)]
+                    # Retrieving data files
+                    filters = {"blade_damage": blade_damage, "wind_speed": wind_speed, "rpm": rpm}
+                    data_rpm_data = filter_data(filename, filters)
+                    data_rpm_stat = filter_data(filename + "_rpms", filters)
 
-                # Whether the different angles should be differentiated by transparency
-                if switch_plot_alpha_angles:
-                    alpha_angle = data_rpm_stat["alpha_angle"].to_numpy()
-                else:
-                    alpha_angle = None
+                    # Whether the different angles should be differentiated by transparency
+                    if switch_plot_alpha_angles:
+                        alpha_angle = data_rpm_data["alpha_angle"].to_numpy()
+                    else:
+                        alpha_angle = None
 
-                model_stats = create_model_stats("BET", data_rpm_data, data_rpm_stat, mean_or_amplitude, abbreviation,
-                                                 wrench_name, switch_val_error_bars, switch_amplitude, dict_keys_txt)
-                models_stats[f"BET model: {blade_damage}%"] = model_stats
+                    model_stats, _ = create_model_stats("BET", data_rpm_data, data_rpm_stat, mean_or_amplitude,
+                                                        abbreviation, wrench_name, switch_val_error_bars, switch_amplitude,
+                                                        dict_keys_txt)
+                    models_stats[f"BET model: {blade_damage}%"] = model_stats
 
-            # File name
-            plot_name = os.path.join(folder_name,
-                                     f"{wrench_name}_b{blade_damages_str}_w{wind_speed}_r{rpm}{comment}")
+                # File name
+                plot_name = os.path.join(folder_name,
+                                         f"{wrench_name}_b{blade_damages_str}_w{wind_speed}_r{rpm}{comment}")
 
-            # Produce the plots
-            figure_number = data_pd_plotter(models_stats, figure_number, plot_name=plot_name,
-                                            data_type=abbreviation[-1], alpha_angle=alpha_angle,
-                                            switch_error_percentage=switch_error_percentage)
+                # Produce the plots
+                figure_number = data_pd_plotter(models_stats, figure_number, plot_name=plot_name,
+                                                data_type=abbreviation[-1], alpha_angle=alpha_angle,
+                                                switch_error_percentage=switch_error_percentage)
 
-    if switch_plot_rpms:
-        if wind_speed == 0:
-            data_file_names = [filename[:filename.index(".")] + f"_rpms{comment}" for filename in filenames]
+        # Retrieve the default scenario whose data will be subtracted to the rest
+        mus_default = np.zeros(len(rpm_lst))
+        stds_default = np.zeros(len(rpm_lst))
+        if switch_subtract_no_damage:
+            blade_damage = blade_damages[0]
+
+            # Retrieving data files
+            filters = {"blade_damage": blade_damage, "wind_speed": wind_speed}
+            data_data = filter_data(filenames[0], filters)
+            data_stat = filter_data(filenames[0] + "_rpms", filters)
+
+            for i in range(len(abbreviations)):
+                abbreviation = abbreviations[i]
+                mus_default = data_stat[f"BET_mu_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
+                stds_default = data_stat[f"BET_std_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
+
+        # Plot the rpm comparison
+        # Extract the models stats
+        models_stats = {}
+        for counter, filename in enumerate(filenames):
+            if switch_subtract_no_damage and counter == 0:
+                continue
+            blade_damage = blade_damages[counter]
+
+            # Retrieving data files
+            filters = {"blade_damage": blade_damage, "wind_speed": wind_speed}
+            data_data = filter_data(filename, filters)
+            data_stat = filter_data(filename + "_rpms", filters)
+
+            model_stats = {}
+            for i in range(len(abbreviations)):
+                abbreviation = abbreviations[i]
+                rpms = data_stat["rpm"].to_numpy()
+                mus = data_stat[f"BET_mu_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
+                stds = data_stat[f"BET_std_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
+                model_stats[abbreviation] = {"rpms": rpms, "mus": mus-mus_default, "stds": stds-stds_default,
+                                             "blade_damage": blade_damage}
+            models_stats[f"BET model: {blade_damage}%"] = model_stats
+
+        if wind_speed != 0:
+            plot_name = os.path.join(folder_name, f"error_b{blade_damages_str}_w{wind_speed}{comment}")
         else:
-            data_file_names = [f"b{i}_rpms{comment}" for i in blade_damages]
-        df_rpms_lst = []
-        for data_file_name in data_file_names:
-            df_rpms = pd.read_csv(os.path.join("Data_storage", f"{data_file_name}.csv"))
-            df_rpms_lst.append(df_rpms)
-
-        if wind_speed == 0:
-            angle_name = int(data_file_name[data_file_name.index('a')+1:data_file_name.index('w')-1])
-            plot_name = os.path.join(folder_name, f"error_b{blade_damages_str}_a{angle_name}_w{wind_speed}{comment}")
-            figure_number = rpm_error_plotter(figure_number, df_rpms_lst,
-                                              plot_name=plot_name, switch_Matlab=False,
-                                              switch_error_percentage=switch_error_percentage)
-        else:
+            angle_name = np.unique(data_data["alpha_angle"].to_numpy())[-1]
             plot_name = os.path.join(folder_name,
-                                     f"error_b{blade_damages_str}_w{wind_speed}{comment}")
-            figure_number = rpm_error_plotter(figure_number, df_rpms_lst,
-                                              plot_name=plot_name, switch_Matlab=False,
-                                              switch_error_percentage=switch_error_percentage)
-        figure_number -= 1
+                                     f"error_b{blade_damages_str}_a{angle_name}_w{wind_speed}{comment}")
 
-        return figure_number
+        figure_number = rpm_error_plotter(figure_number, models_stats, plot_name=plot_name,
+                                          switch_error_percentage=switch_error_percentage,
+                                          switch_plot_stds=switch_plot_stds)
+
+    return figure_number
+
+
+def plot_rpms_windspeeds(figure_number, filenames, blade_damage, model, wind_speed_lst, comment, switch_error_percentage,
+                      switch_amplitude):
+    """
+    Plot the wrenches (absolute or relative) error with respect to the rpms for the different wind speeds in a single
+    plot
+    :param figure_number: the number of the next plot
+    :param filenames: the names of the file with the information regarding a single blade damage
+    :param blade_damage: the blade damage
+    :param model: the name of the model to be plotted "Matlab" or "BET"
+    :param wind_speed_lst: the list of wind speeds to plot
+    :param comment: whether a comment should be added at the end of the plot name
+    :param switch_error_percentage: whether the error should be absolute or relative
+    :param switch_amplitude: whether the mean or the amplitude of the signals errors should be plotted
+    :return:
+    """
+    dict_keys_txt, mean_or_amplitude, comment = check_amp_rel(switch_error_percentage, switch_amplitude, comment)
+    models_stats = {}
+    for filename in filenames:
+        for wind_speed in wind_speed_lst:
+            filters = {"wind_speed": wind_speed, "blade_damage": blade_damage}
+            data_stat = filter_data(filename + "_rpms", filters)
+            if data_stat.empty:
+                continue
+            model_stats = {}
+            for i in range(len(abbreviations)):
+                abbreviation = abbreviations[i]
+                rpms = data_stat["rpm"].to_numpy()
+                mus = data_stat[f"{model}_mu_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
+                stds = data_stat[f"{model}_std_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
+                model_stats[abbreviation] = {"rpms": rpms, "mus": mus, "stds": stds, "blade_damage": blade_damage}
+            models_stats[f"w={wind_speed}"] = model_stats
+
+    # if 0 not in wind_speed_lst:
+    plot_name = os.path.join(f"b{blade_damage}",
+                             f"error_b{blade_damage}_m{model}{comment}")
+    # else:
+    #     angle_name = int([i[1:] for i in filename.split("_") if "a" in i][0])
+    #     plot_name = os.path.join(f"b{blade_damage}", f"error_b{blade_damage}_a{angle_name}_m{model}{comment}")
+    figure_number = rpm_error_plotter(figure_number, models_stats, plot_name=plot_name,
+                                      switch_error_percentage=switch_error_percentage, switch_plot_stds=False, ncol=2)
+    return figure_number
+
+
+def filter_data(filename, filters):
+    """
+    Function to import data and filter it
+    :param filename: name of the file
+    :param filters: filters to be applied in the form of a dictionary
+    :return:
+    """
+    df = pd.read_csv(os.path.join("Data_storage", filename + ".csv"))
+    if len(filters.keys()) == 0:
+        return df
+    filtered_data = df[[all(tot) for tot in zip(*[(df[key] == filters[key]) for key in filters.keys()])]]
+    return filtered_data
 
 
 def check_amp_rel(switch_error_percentage, switch_amplitude, comment):
@@ -492,15 +569,15 @@ def create_model_stats(model, data_rpm_data, data_rpm_stat, mean_or_amplitude, a
                        switch_val_error_bars, switch_amplitude, dict_keys_txt):
     """
     Create dictionary with model statistical data, validation and model data, as well as error data.
-    :param model:
-    :param data_rpm_data:
-    :param data_rpm_stat:
-    :param mean_or_amplitude:
-    :param abbreviation:
-    :param wrench_name:
-    :param switch_val_error_bars:
-    :param switch_amplitude:
-    :param dict_keys_txt:
+    :param model: name of the model
+    :param data_rpm_data: extracted data filtered by rpm
+    :param data_rpm_stat: statistical data filtered by rpm
+    :param mean_or_amplitude: whether mean or amplitude are plotted
+    :param abbreviation: whether thrust or torque abbreviation
+    :param wrench_name: the name of the wrench
+    :param switch_val_error_bars: whether to experimental error should be computed
+    :param switch_amplitude: whether the amplitude is computed instead of the mean
+    :param dict_keys_txt: dictionary of dictionary key components
     :return:
     """
 
@@ -521,25 +598,53 @@ def create_model_stats(model, data_rpm_data, data_rpm_stat, mean_or_amplitude, a
     for data_point in data_points:
         model_stats[f"{data_point}"] = \
             data_rpm_stat[
-                f"{model_name}_{data_point}_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy().item()
+                f"{model}_{data_point}_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy().item()
     model_stats["validation_data"] = corrected_experimental_data_mean
     model_stats["error_bar"] = error_bar
     model_stats["model_data"] = data_rpm_data[f"{model}{mean_or_amplitude['mod']}_{abbreviation}"].to_numpy()
 
-    return model_stats
+    return model_stats, model_name
 
 
 if __name__ == "__main__":
-    # filename_input_data = "b0"
-    filename_input_data = "b25_a90_w0"
-    # filename_input_stat = "b0_rpms"
-    filename_input_stat = "b25_a90_w0_rpms"
+    # User_input
+    plot_single_damage = False
+    plot_single_windspeed = True
+    switch_error_percentage = True
+    switch_amplitude = False
+    switch_val_error_bars = False
+    switch_plot_alpha_angles = True
+    switch_subtract_no_damage = True
+    switch_plot_stds = False
+
     blade_damage = 25
-    wind_speed_lst = [0]
+    filename_input_data = f"b{blade_damage}"
+    # filename_input_data = "b25_a90_w0"
+    filename_input_stat = f"b{blade_damage}_rpms"
+    # filename_input_stat = "b25_a90_w0_rpms"
+
+    wind_speed_lst = [2, 4, 6, 9, 12]  # (0), 2, 4, 6, 9, 12
     rpm_lst = [300, 500, 700, 900, 1100]
+    blade_damage_compare = [0, 10, 25]
     comment = ""
-    plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind_speed_lst, rpm_lst,
-                    switch_plot_alpha_angles=True, switch_amplitude=True, switch_val_error_bars=True,
-                    switch_error_percentage=True, comment=comment)
-
-
+    figure_number = 1
+    if plot_single_windspeed:
+        if plot_single_damage:
+            plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind_speed_lst, rpm_lst,
+                            switch_plot_alpha_angles=switch_plot_alpha_angles, switch_amplitude=switch_amplitude,
+                            switch_val_error_bars=switch_val_error_bars, switch_error_percentage=switch_error_percentage,
+                            comment=comment)
+        else:
+            filenames = [f"b{b}" for b in blade_damage_compare]
+            # filenames = [f"b{b}_a90_w0" for b in blade_damage_compare]
+            data_damage_comparison(figure_number, wind_speed_lst, rpm_lst, filenames,
+                                   switch_error_percentage=switch_error_percentage,
+                                   switch_val_error_bars=switch_val_error_bars,
+                                   switch_plot_alpha_angles=switch_plot_alpha_angles,
+                                   switch_subtract_no_damage=switch_subtract_no_damage,
+                                   switch_plot_stds=switch_plot_stds)
+    else:
+        model = "BET"
+        filename_input_data = [f"b{blade_damage}_a90_w0", filename_input_data]
+        figure_number = plot_rpms_windspeeds(figure_number, filename_input_data, blade_damage, model, wind_speed_lst,
+                                             comment, switch_error_percentage, switch_amplitude)
