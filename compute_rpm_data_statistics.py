@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+"""
+Computes the statistics for each rpm. This is done by compressing the information from all the angles with respect
+to the flow for a single propeller rotation velocity. The main statistics are the mean and standard deviation of the
+absolute and the relative error when comparing the experimental data obtained for each angle with that obtained from
+the models.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.1 (04/04/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
+__status__ = "Development"
+
 import pandas as pd
 import matplotlib as mpl
 from scipy.stats import norm

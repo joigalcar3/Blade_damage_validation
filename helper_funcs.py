@@ -152,7 +152,7 @@ def pso_cost_function(x, sinusoid_f, time_lst, data_lst, mean_sinusoid):
     A = x[0]
     phase = x[1]
     current_prediction = mean_sinusoid + A * np.sin(sinusoid_f * time_lst + phase)
-    cost_value = np.sum(np.abs(current_prediction - np.array(data_lst)))
+    cost_value = np.sqrt(np.sum(np.square(current_prediction - np.array(data_lst)))/len(current_prediction))
     return cost_value
 
 
@@ -166,7 +166,7 @@ def obtain_wind_correction(figure_number, alpha_angle, wind_speed, folder_files_
     :param wind_speed: the speed of the wind
     :param folder_files_np: the directory where the no propeller files are stored
     :param switch_wind_correction: whether there should be a wind correction
-    :param switch_plot_experimental_validation: whether the thrust and torque wind data should be plotted
+    :param switch_plot_experimental_validation: whether the thrust and torque wind data corrections should be plotted
     :param switch_print_info: whether the retrieved wind information should be displayed
     :return:
     """

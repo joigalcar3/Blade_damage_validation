@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+"""
+Carries out the identification or the reconstruction of the sinusoid from experimental data
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.1 (04/04/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
+__status__ = "Development"
+
 import pandas as pd
 from scipy import signal
 from astropy.timeseries import LombScargle
@@ -60,13 +74,21 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
                                                                        switch_plot_fft=switch_plot_fft, n_points=None)
             t_fit = np.linspace(0, 1, 1000)
             ls = LombScargle(sampled_times, detrended_wrench_signal)
-            y_fit = ls.model(t_fit, largest_frequency_wrench_signal)
+            y_fit = ls.model(t_fit, largest_frequency_wrench_signal/(2*np.pi))
             reconstructed_amplitude = (max(y_fit) - min(y_fit)) / 2
             wrench_signal_amplitude = reconstructed_amplitude
         else:
             raise ValueError(f"The id_type {id_type} is not expected.")
 
         if switch_plot_sinusoid_id:
+            if id_type == "LS":
+                plt.figure(fn)
+                fn += 1
+                frequency, power = LombScargle(sampled_times, detrended_wrench_signal).autopower(
+                    maximum_frequency=largest_frequency_wrench_signal / (2 * np.pi) + 10)
+                plt.plot(frequency, power)
+                plt.grid(True)
+
             data_ps = np.polyfit(sampled_times, wrench_signal_numpy, 1)
             detrended_data_ps = np.polyfit(sampled_times, detrended_wrench_signal, 1)
             plt.figure(fn)

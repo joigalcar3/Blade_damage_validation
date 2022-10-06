@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Provides the functions to plot the processed experimental data
+Provides the functions to plot the processed experimental and model data.
 """
 
 __author__ = "Jose Ignacio de Alvear Cardenas"
@@ -39,8 +39,8 @@ wrench_names = {"T": "thrust", "N": "torque"}
 wrench_units = {"T": "N", "N": "Nm"}
 data_points = ["mu", "std", "m", "b", "tol"]
 models = ["Matlab", "BET"]
-red_color_hex, red_color_rgb = "#d62728", [i / 255 for i in [31, 119, 180]]
-blue_color_hex, blue_color_rgb = "#1f77b4", [i / 255 for i in [214, 39, 40]]
+red_color_hex, red_color_rgb = "#d62728", [i / 255 for i in [214, 39, 40]]
+blue_color_hex, blue_color_rgb = "#1f77b4", [i / 255 for i in [31, 119, 180]]
 green_color_hex, green_color_rgb = "#2ca02c", [i / 255 for i in [44, 160, 44]]
 orange_color_hex, orange_color_rgb = '#ff7f0e', [i / 255 for i in [255, 127, 14]]
 purple_color_hex, purple_color_rgb = '#9467bd', [i / 255 for i in [148, 103, 189]]
@@ -201,8 +201,9 @@ def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_er
         ax_name.yaxis.set_label_coords(-0.1, 0.5)
 
         if counter_ax == 0:
-            ax_name.legend(markerscale=2, ncol=ncol, loc=1)
-            ax_name.set_ylim((ax_name.get_ylim()[0], ax_name.get_ylim()[1] * 2))
+            # ax_name.legend(markerscale=2, ncol=ncol, loc=1)
+            ax_name.legend(markerscale=2, ncol=ncol)
+            # ax_name.set_ylim((ax_name.get_ylim()[0], ax_name.get_ylim()[1] * 2))
         elif counter_ax == len(ax_lst) - 1:
             ax_name.set_xlabel("Propeller rotational speed [rad/s]")
             ax_name.set_xticks(rpms)

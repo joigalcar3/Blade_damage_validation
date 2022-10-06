@@ -1,3 +1,18 @@
+#!/usr/bin/env python3
+"""
+Retrieves the data from the pre-processed files, including the signal reconstruction. The data retrieved is saved in
+files of the format "bx_rpms" within the "Data_storage" folder.
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.1 (04/04/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
+__status__ = "Development"
+
 import pandas as pd
 import matplotlib as mpl
 
