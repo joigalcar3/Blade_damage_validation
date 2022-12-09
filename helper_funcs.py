@@ -1,7 +1,23 @@
+#!/usr/bin/env python3
+"""
+File that contains the help functions for the data extraction, statistical analysis and plotting
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.1 (04/04/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
+__status__ = "Development"
+
+# Imports
+import pandas as pd
+from scipy.fft import fft, fftfreq
 from Blade_damage.Propeller import Propeller
 from Blade_damage.user_input import *
 from Blade_damage.helper_func import *
-import pandas as pd
 
 
 def experimental_data_extraction(figure_number, blade_damage, alpha_angle, wind_speed, rpm, folder_files,
@@ -107,7 +123,7 @@ def compute_BET_signals(figure_number, blade_damage, alpha_angle, wind_speed, rp
     if abs(body_velocity[1, 0]) < 1e-12: body_velocity[1, 0] = 0
     if abs(body_velocity[2, 0]) < 1e-12: body_velocity[2, 0] = 0
 
-    # Computations
+    # Computation of forces and moments from the mass and aerodynamic effects
     n_points = int(total_time / dt + 1)
     F_healthy_lst = np.zeros((3, n_points))
     M_healthy_lst = np.zeros((3, n_points))
@@ -132,6 +148,7 @@ def compute_BET_signals(figure_number, blade_damage, alpha_angle, wind_speed, rp
                 M_healthy_lst, mass_aero='t')
         figure_number += 3
 
+    # Also return the information of the Matlab model when needed
     T, N = 0, 0
     if blade_damage == 0:
         T, N = propeller.compute_lift_torque_matlab(body_velocity, pqr, rpms)
@@ -156,6 +173,39 @@ def pso_cost_function(x, sinusoid_f, time_lst, data_lst, mean_sinusoid):
     return cost_value
 
 
+def frequency_extraction(figure_number, signal, dt, switch_plot_fft=False, n_points=None):
+    """
+    Extract the frequency of a signal
+    :param figure_number: the number of the next figure to plot
+    :param signal: the signal from which the frequency should be extracted
+    :param dt: the time that has passed between sample and sample
+    :param switch_plot_fft: whether to plot the FFT
+    :param n_points: number of the signal datapoints to use for the FFT
+    :return:
+    """
+    # When the number is not specified, then the whole signal is chosen
+    if n_points is None:
+        n_points = signal.shape[0]
+
+    # Output in the form of cycles/s. Transformed to rad/s
+    yf = fft(signal)[0:n_points // 2]
+    xf = fftfreq(n_points, dt)[:n_points // 2] * 2 * np.pi
+
+    # Plot the FFT signal
+    if switch_plot_fft:
+        plt.figure(figure_number)
+        figure_number += 1
+        plt.plot(xf, 2.0/n_points * np.abs(yf), color="r", marker="o")
+        plt.ylabel("Amplitude [-]")
+        plt.xlabel("Frequency [rad/s]")
+        plt.grid()
+
+    # Extract what is the frequency with the largest amplitude from the FFT
+    largest_frequency = xf[np.where(abs(yf) == max(abs(yf[1:])))[0].item()]
+
+    return figure_number, largest_frequency
+
+
 def obtain_wind_correction(figure_number, alpha_angle, wind_speed, folder_files_np,
                            switch_wind_correction=True, switch_plot_experimental_validation=False,
                            switch_print_info=False):
@@ -170,19 +220,21 @@ def obtain_wind_correction(figure_number, alpha_angle, wind_speed, folder_files_
     :param switch_print_info: whether the retrieved wind information should be displayed
     :return:
     """
-    # Corrections
     if switch_wind_correction:
+        # Obtain forces and moments of the wind on the test stand without propeller
         wind_correction_filename = f"a{alpha_angle}_w{wind_speed}.csv"
         wind_correction_filepath = os.path.join(folder_files_np, wind_correction_filename)
         wind_correction_content = pd.read_csv(wind_correction_filepath, skiprows=1)
         wind_correction_thrust = wind_correction_content['Thrust (N)']
         wind_correction_torque = wind_correction_content['Torque (N·m)']
 
+        # Compute the mean and the standard deviation
         mean_wind_correction_thrust = wind_correction_thrust[wind_correction_thrust.notna()].mean()
         mean_wind_correction_torque = wind_correction_torque[wind_correction_torque.notna()].mean()
         std_wind_correction_thrust = wind_correction_thrust[wind_correction_thrust.notna()].std()
         std_wind_correction_torque = wind_correction_torque[wind_correction_torque.notna()].std()
 
+        # Print the wind correction results
         if switch_print_info:
             print("\n Wind corrections thrust and torque")
             print(f"The thrust mean: {mean_wind_correction_thrust}")
@@ -191,6 +243,7 @@ def obtain_wind_correction(figure_number, alpha_angle, wind_speed, folder_files_
             print(f"The torque mean: {mean_wind_correction_torque}")
             print(f"The torque standard deviation: {std_wind_correction_torque}")
 
+        # Plot the thrust and torque wind corrections information
         if switch_plot_experimental_validation:
             plt.figure(figure_number)
             figure_number += 1

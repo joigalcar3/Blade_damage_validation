@@ -12,22 +12,23 @@ __maintainer__ = "Jose Ignacio de Alvear Cardenas"
 __email__ = "j.i.dealvearcardenas@student.tudelft.nl"
 __status__ = "Development"
 
+# Imports
 import pandas as pd
 from scipy import signal
 from astropy.timeseries import LombScargle
 from pyswarm import pso
-import matplotlib as mpl
-mpl.use('TkAgg')
 from Blade_damage.user_input import *
 from Blade_damage.helper_func import *
-from frequency_extraction import frequency_extraction
-from helper_funcs import compute_BET_signals, pso_cost_function, obtain_wind_correction, experimental_data_extraction
+from helper_funcs import compute_BET_signals, pso_cost_function, obtain_wind_correction, experimental_data_extraction, \
+    frequency_extraction
+
+mpl.use('TkAgg')
 
 
 def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_model_signal, switch_plot_fft=False,
                            switch_plot_sinusoid_id=False, id_type="PSO"):
     """
-    Obtain the mean and the amplitude of the model and experimental signals
+    Obtain the mean and the amplitude of the model and experimental signals using the specified technique (PSO or LS)
     :param fn: the number of the next figure to be plotted
     :param content: the dataframe containing the experimental information
     :param signal_name: whether the signal is thrust or torque
@@ -40,6 +41,7 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
     """
     time = content['Time (s)']
 
+    # Choose the type of signal to reconstruct
     if signal_name == "T":
         plot_ylabel = 'Thrust (N)'
         wrench_signal = content[plot_ylabel]
@@ -49,6 +51,7 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
     else:
         raise ValueError(f"The selected signal ({signal_name}) does not exist.")
 
+    # Apply the wind corrections to the signal
     wrench_signal = wrench_signal[wrench_signal.notna()] - mean_wind_correction
     wrench_signal_mean = wrench_signal.mean()
     wrench_signal_numpy = wrench_signal.to_numpy()
@@ -57,9 +60,32 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
     sampled_times = time[np.asarray(wrench_signal.keys())].to_numpy()
     sampled_times -= sampled_times[0]
 
+    # Plot the data from validation and the detrended data
+    if switch_plot_sinusoid_id:
+        time_local = time - time.iloc[0]
+        time_local = time_local[wrench_signal.notna().index]
+        wrench_m, wrench_b = np.polyfit(time_local, wrench_signal, 1)
+        detrended_wrench_m, detrended_wrench_b = np.polyfit(time_local, detrended_wrench_signal, 1)
+
+        fig = plt.figure(fn)
+        fn += 1
+        plt.scatter(time_local, wrench_signal, color="#1f77b4", marker="o", label="Data")
+        plt.scatter(time_local, detrended_wrench_signal, color="#d62728", marker="o", label="Detrended data")
+        plt.plot(time_local, wrench_b+wrench_m*time_local, color="#1f77b4", linestyle="--", linewidth=4)
+        plt.plot(time_local, detrended_wrench_b + detrended_wrench_m * time_local, color="#d62728", linestyle="--", linewidth=4)
+        plt.ylabel("Thrust [N]")
+        plt.xlabel("Time [s]")
+        plt.grid(True)
+        fig.subplots_adjust(left=0.125, top=0.94, right=0.98, bottom=0.17)
+        fig.set_size_inches(19.24, 10.55)
+        plt.legend(markerscale=2)
+
+    # Compute the sinusoid
     BET_mean = np.mean(BET_model_signal)
     BET_amplitude = (np.max(BET_model_signal) - np.min(BET_model_signal)) / 2
     if np.max(BET_model_signal) - np.min(BET_model_signal) != 0:
+
+        # Apply PSO
         if id_type == "PSO":
             fn, largest_frequency_wrench_signal = frequency_extraction(fn, BET_model_signal, dt,
                                                                        switch_plot_fft=switch_plot_fft, n_points=None)
@@ -69,6 +95,8 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
                       "data_lst": detrended_wrench_signal, "mean_sinusoid": wrench_signal_mean}
             xopt, fopt = pso(pso_cost_function, lb, ub, debug=True, swarmsize=5000, maxiter=20, kwargs=kwargs)
             wrench_signal_amplitude = xopt[0]
+
+        # Apply Lomb-Scargle periodogram
         elif id_type == "LS":
             fn, largest_frequency_wrench_signal = frequency_extraction(fn, BET_model_signal, dt,
                                                                        switch_plot_fft=switch_plot_fft, n_points=None)
@@ -80,6 +108,7 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
         else:
             raise ValueError(f"The id_type {id_type} is not expected.")
 
+        # Plot the identified sinusoid with the data used for the reconstruction
         if switch_plot_sinusoid_id:
             if id_type == "LS":
                 plt.figure(fn)
@@ -89,18 +118,31 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
                 plt.plot(frequency, power)
                 plt.grid(True)
 
+            # Create same plot as before but know with the fitted sinusoid
             data_ps = np.polyfit(sampled_times, wrench_signal_numpy, 1)
             detrended_data_ps = np.polyfit(sampled_times, detrended_wrench_signal, 1)
             plt.figure(fn)
             fn += 1
-            plt.plot(sampled_times, wrench_signal_numpy, "bo", label="Data")  # Plotting the data gathered
-            plt.plot(sampled_times, sampled_times * data_ps[0] + data_ps[1], "b--", linewidth=4)
-            plt.plot(sampled_times, detrended_wrench_signal, "ro", label="Detrended data")  # Plotting the detrended data gathered
-            plt.plot(sampled_times, sampled_times * detrended_data_ps[0] + detrended_data_ps[1], "r--", linewidth=4)
-            plt.plot(np.arange(0, total_time + dt, dt), BET_model_signal, "g--")  # Plotting the data from the model
+
+            # Plotting the data gathered
+            plt.scatter(sampled_times, wrench_signal_numpy, color="#1f77b4", marker="o",
+                        label="Data")
+            plt.plot(sampled_times, sampled_times * data_ps[0] + data_ps[1], color="#1f77b4", linestyle="--",
+                     linewidth=4)
+
+            # Plotting the detrended data gathered
+            plt.scatter(sampled_times, detrended_wrench_signal, color="#d62728", marker="o",
+                        label="Detrended data")
+            plt.plot(sampled_times, sampled_times * detrended_data_ps[0] + detrended_data_ps[1], color="#d62728",
+                     linestyle="--", linewidth=4)
+
+            # Plotting the data from the model
+            plt.plot(np.arange(0, total_time + dt, dt), BET_model_signal, "g--")
+
+            # Plotting the approximated signal
             plt.plot(np.arange(0, np.max(sampled_times), dt), wrench_signal_mean +
                      xopt[0] * np.sin(largest_frequency_wrench_signal * np.arange(0, np.max(sampled_times), dt) + xopt[1]),
-                     "r-")  # Plotting the approximated signal
+                     "r-")
             plt.xlabel("Timestamp [s]")
             plt.ylabel(plot_ylabel)
             plt.grid(True)

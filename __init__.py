@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Provides the code for extracting the required information and analysing it. There are different inputs depending
-on the damage and the wind speed.
+Provides the code for extracting the required information and analysing it. There are different pre-defined inputs
+depending on the damage and the wind speed.
 """
 
 __author__ = "Jose Ignacio de Alvear Cardenas"

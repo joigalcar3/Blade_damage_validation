@@ -1,3 +1,19 @@
+#!/usr/bin/env python3
+"""
+File to divide a single file into multiple ones with different rpm values.
+
+A single file is usually divided into 5 files, one for each of the following rpm values: 300, 500, 700, 900 and 1100 rpm
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.1 (04/04/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
+__status__ = "Development"
+
 import pandas as pd
 import scipy.signal as ss
 import numpy as np
@@ -13,7 +29,6 @@ mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 mpl.rcParams['grid.alpha'] = 0.5
-# mpl.use('Agg')
 mpl.use('TkAgg')
 font = {'size': 42,
         'family': "Arial"}
@@ -21,6 +36,17 @@ mpl.rc('font', **font)
 
 
 def separate_rpm(filename, figure_number, original_folder, destination_folder, plotting=False):
+    """
+    Divides the data within a single file into multiple files with different values of propeller rotational speed.
+    Normally, one file would be dividided into 5 files, each corresponding to rotational speed values of 300, 500, 700,
+    900 and 1100 rpms.
+    :param filename: name of the file
+    :param figure_number: the figure number to be used for the next figure generation
+    :param original_folder: the directory where the input file is located
+    :param destination_folder: the directory where the output file should be located
+    :param plotting: whether the ESC and rpm division should be plotted (used for the paper's figures)
+    :return:
+    """
     print(f"Separating rpms of: {filename}")
     # Obtain information data
     blade_damage_begin = filename.index("b") + 1
@@ -47,7 +73,7 @@ def separate_rpm(filename, figure_number, original_folder, destination_folder, p
 
     # Extracting the uninterrupted constant ESC intervals
     if plotting:
-        plt.figure(figure_number)
+        fig = plt.figure(figure_number)
         figure_number += 1
         plt.plot(content['Time (s)'], escs, alpha=0.5, linewidth=4)
     constant_rpm_intervals = []
@@ -71,30 +97,34 @@ def separate_rpm(filename, figure_number, original_folder, destination_folder, p
             plt.plot(content['Time (s)'][np.arange(left_index, esc_indeces[-1] + 1)], esc_section, linestyle='--', label=f"{esc}",
                      linewidth=4)
 
-    # Plotting the intervals in the ESC domain
+    # Plotting
     rpms = [300, 500, 700, 900, 1100]
     if plotting:
+        # Plotting the intervals in the ESC domain
         # plt.title("Selected timestamps for analysis")
         plt.ylabel("ESC value [µs]")
-        plt.xlabel("Timestamp [s]")
+        plt.xlabel("Time [s]")
         plt.grid(True)
         plt.legend()
+        fig.subplots_adjust(left=0.125, top=0.94, right=0.98, bottom=0.17)
+        fig.set_size_inches(19.24, 10.55)
 
         # Plotting the intervals in the motor rotations domain
-        plt.figure(figure_number)
+        fig = plt.figure(figure_number)
         figure_number += 1
         plt.plot(content['Time (s)'], content["Motor Electrical Speed (rad/s)"], alpha=0.5, linewidth=4)
         for counter, rpm_interval in enumerate(constant_rpm_timestamps):
             plt.plot(content['Time (s)'][rpm_interval], content["Motor Electrical Speed (rad/s)"][rpm_interval], linestyle='--', label=str(rpms[counter]),
                      linewidth=4)
         # plt.title("Selected rpm intervals for analysis")
-        plt.ylabel("Motor Electrical Speed (rad/s)")
-        plt.xlabel("Timestamp [s]")
+        plt.ylabel("Motor Electrical Speed [rad/s]")
+        plt.xlabel("Time [s]")
         plt.grid(True)
         plt.legend()
+        fig.subplots_adjust(left=0.125, top=0.94, right=0.98, bottom=0.17)
+        fig.set_size_inches(19.24, 10.55)
 
-
-
+    # Saved rpms in different files
     for count, rpm_interval in enumerate(constant_rpm_timestamps):
         data_interval = content[rpm_interval[0]:rpm_interval[-1] + 1]
         rpm = rpms[count]

@@ -19,7 +19,7 @@ def select_scenario(chosen_scenario):
     :param chosen_scenario: number of the chosen scenario
     :return:
     """
-    # Scenario 1: Figure 2.31 in thesis
+    # Scenario 1: Figure 9.30 in thesis - \Delta Fz
     if chosen_scenario == 1:
         sinusoid_f = 95.5
         sampling_f = 6.68
@@ -43,7 +43,7 @@ def select_scenario(chosen_scenario):
         max_time = 20
         switch_time_innaccuracy = False
 
-        # Scenario 3: figure E.31 in thesis
+    # Scenario 3: figure E.31 in thesis
     elif chosen_scenario == 3:
         sinusoid_f = 47.7464829275686
         sampling_f = 6.68

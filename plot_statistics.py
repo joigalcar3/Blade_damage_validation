@@ -28,17 +28,19 @@ mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 mpl.rcParams['grid.alpha'] = 0.5
-# mpl.use('Agg')
 mpl.use('TkAgg')
 font = {'size': 42,
         'family': "Arial"}
 mpl.rc('font', **font)
 
+# Creating naming and dictionaries
 abbreviations = ["T", "N"]
 wrench_names = {"T": "thrust", "N": "torque"}
 wrench_units = {"T": "N", "N": "Nm"}
 data_points = ["mu", "std", "m", "b", "tol"]
 models = ["Matlab", "BET"]
+
+# Setting up color scheme
 red_color_hex, red_color_rgb = "#d62728", [i / 255 for i in [214, 39, 40]]
 blue_color_hex, blue_color_rgb = "#1f77b4", [i / 255 for i in [31, 119, 180]]
 green_color_hex, green_color_rgb = "#2ca02c", [i / 255 for i in [44, 160, 44]]
@@ -154,23 +156,26 @@ def plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind
 
 
 def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_error_percentage=False,
-                      switch_plot_stds=True, ncol=1):
+                      ncol=1, switch_plot_stds=True, switch_subtract_no_damage=False):
     """
     Plot the evolution of the errors through different rpms with its mean and standard deviation
     :param figure_number: number of the figure to plot
     :param models_stats: the dictionary that contains the thrust and torque statistical information for plotting
     :param plot_name: the name of the plot that should be produced as output
     :param switch_error_percentage: whether the relative error is plotted instead of the absolute error
+    :param ncol: number of columns in the legend when plotting
+    :param switch_subtract_no_damage: whether the plotted data had the no damage data subtracted
     :param switch_plot_stds: whether the whiskers denoting the stds should be plotted
     :return:
     """
+    # Create figure
     f, ax_lst = plt.subplots(2, 1, sharex=True, gridspec_kw={'wspace': 0.5, 'hspace': 0.2}, num=figure_number)
     figure_number += 1
     unique_blade_damages = set([models_stats[i][j]["blade_damage"]
                                 for i in models_stats.keys()
                                 for j in models_stats[i].keys()])
 
-    # Plot the thrust errors
+    # Plot the errors
     for counter_ax, ax_name in enumerate(ax_lst):
         abbreviation = abbreviations[counter_ax]
         wrench_unit = wrench_units[abbreviation]
@@ -178,40 +183,54 @@ def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_er
             wrench_data = models_stats[model_name][abbreviation]
             blade_damage = wrench_data["blade_damage"]
             rpms = wrench_data["rpms"]
+
+            # Create label whether it is different damages or different models
             if "%" in model_name or len(unique_blade_damages) == 1:
                 signal_label = model_name
             else:
                 signal_label = f"{model_name}: {blade_damage}%"
+
+            # Plot with and without whiskers
             if switch_plot_stds:
                 ax_name.errorbar(rpms, wrench_data["mus"], yerr=wrench_data["stds"] * 1.96,
-                                 color=colors_hex[counter_model], capsize=4, marker=markers[counter_model],
+                                 color=colors_hex[counter_model], capsize=16, capthick=2, marker=markers[counter_model],
                                  markersize=10, alpha=0.5, label=signal_label)
             else:
                 ax_name.plot(rpms, wrench_data["mus"], color=colors_hex[counter_model], marker=markers[counter_model],
-                             markersize=10, alpha=0.5, label=signal_label)
+                             markersize=20, alpha=0.5, label=signal_label)
 
         ax_name.grid(True)
         ax_name.ticklabel_format(axis="y", style="sci", scilimits=(0, 3))
+
+        # Include the y-label
         if switch_error_percentage:
-            ax_name.set_ylabel(f"{abbreviation} error [%]")
-            # ax_name.set_ylabel(f"{abbreviation} $\Delta$error [%]")
+            if switch_subtract_no_damage:
+                ax_name.set_ylabel(f"{abbreviation} $\Delta$error [%]")
+            else:
+                ax_name.set_ylabel(f"{abbreviation} error [%]")
         else:
-            ax_name.set_ylabel(f"{abbreviation} error [{wrench_unit}]")
-            # ax_name.set_ylabel(f"{abbreviation} $\Delta$error [{wrench_unit}]")
+            if switch_subtract_no_damage:
+                ax_name.set_ylabel(f"{abbreviation} $\Delta$error [{wrench_unit}]")
+            else:
+                ax_name.set_ylabel(f"{abbreviation} error [{wrench_unit}]")
         ax_name.yaxis.set_label_coords(-0.1, 0.5)
 
+        # Include legend
         if counter_ax == 0:
-            # ax_name.legend(markerscale=2, ncol=ncol, loc=1)
-            ax_name.legend(markerscale=2, ncol=ncol)
+            # ax_name.legend(markerscale=2, ncol=ncol, loc=1)   # position legend in the top right corner
+            ax_name.legend(markerscale=2, ncol=ncol)      # dont provide lengend position
+            # ax_name.legend(markerscale=2, ncol=ncol, loc="lower left")    # position the legend in the lower left
+
+            # Create space on the upper space of the frame for the legend
             # ax_name.set_ylim((ax_name.get_ylim()[0], ax_name.get_ylim()[1] * 2))
         elif counter_ax == len(ax_lst) - 1:
             ax_name.set_xlabel("Propeller rotational speed [rad/s]")
             ax_name.set_xticks(rpms)
 
-
+    # Set up image dimensions and save it
     f.subplots_adjust(left=0.125, top=0.94, right=0.98, bottom=0.17)
     f.set_size_inches(19.24, 10.55)
-    f.savefig(os.path.join("Plots_storage", f"{plot_name}.png"))
+    f.savefig(os.path.join("Plots_storage", f"{plot_name}.pdf"))
     return figure_number
 
 
@@ -346,7 +365,7 @@ def data_pd_plotter(models_stats, figure_number, plot_name="dummy", data_type="T
     ax_pd.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
     f_T.subplots_adjust(left=0.1, top=0.95, right=0.98, bottom=0.17)
     f_T.set_size_inches(19.24, 10.55)
-    f_T.savefig(os.path.join("Plots_storage", f"{plot_name}.png"), bbox_inches='tight')
+    f_T.savefig(os.path.join("Plots_storage", f"{plot_name}.pdf"), bbox_inches='tight')
 
     return figure_number
 
@@ -466,6 +485,7 @@ def data_damage_comparison(figure_number, wind_speed_lst, rpm_lst, filenames, co
                                              "blade_damage": blade_damage}
             models_stats[f"BET model: {blade_damage}%"] = model_stats
 
+        # Creating the name of the file where to save the plots
         if wind_speed != 0:
             plot_name = os.path.join(folder_name, f"error_b{blade_damages_str}_w{wind_speed}{comment}")
         else:
@@ -475,7 +495,8 @@ def data_damage_comparison(figure_number, wind_speed_lst, rpm_lst, filenames, co
 
         figure_number = rpm_error_plotter(figure_number, models_stats, plot_name=plot_name,
                                           switch_error_percentage=switch_error_percentage,
-                                          switch_plot_stds=switch_plot_stds)
+                                          switch_plot_stds=switch_plot_stds,
+                                          switch_subtract_no_damage=switch_subtract_no_damage)
 
     return figure_number
 
@@ -504,6 +525,8 @@ def plot_rpms_windspeeds(figure_number, filenames, blade_damage, model, wind_spe
             if data_stat.empty:
                 continue
             model_stats = {}
+
+            # Extract the information for every windspeed
             for i in range(len(abbreviations)):
                 abbreviation = abbreviations[i]
                 rpms = data_stat["rpm"].to_numpy()
@@ -512,12 +535,11 @@ def plot_rpms_windspeeds(figure_number, filenames, blade_damage, model, wind_spe
                 model_stats[abbreviation] = {"rpms": rpms, "mus": mus, "stds": stds, "blade_damage": blade_damage}
             models_stats[f"w={wind_speed}"] = model_stats
 
-    # if 0 not in wind_speed_lst:
+    # Obtain the filename to save the figure
     plot_name = os.path.join(f"b{blade_damage}",
                              f"error_b{blade_damage}_m{model}{comment}")
-    # else:
-    #     angle_name = int([i[1:] for i in filename.split("_") if "a" in i][0])
-    #     plot_name = os.path.join(f"b{blade_damage}", f"error_b{blade_damage}_a{angle_name}_m{model}{comment}")
+
+    # Plot the figure
     figure_number = rpm_error_plotter(figure_number, models_stats, plot_name=plot_name,
                                       switch_error_percentage=switch_error_percentage, switch_plot_stds=False, ncol=2)
     return figure_number
@@ -581,7 +603,6 @@ def create_model_stats(model, data_rpm_data, data_rpm_stat, mean_or_amplitude, a
     :param dict_keys_txt: dictionary of dictionary key components
     :return:
     """
-
     # Extracting experimental data
     corrected_experimental_data_mean = \
         data_rpm_data[f"{mean_or_amplitude['val']}_wind_corrected_{wrench_name}"].to_numpy()
@@ -592,10 +613,13 @@ def create_model_stats(model, data_rpm_data, data_rpm_stat, mean_or_amplitude, a
 
         error_bar = experimental_data_std + correction_experimental_data_std
 
-    model_stats = {}
+    # If the Matlab model is chosen, the name is Gray-box model instead
     model_name = model
     if "Matlab" in model:
         model_name = "Gray-box"
+
+    # Extract all the information types in data_points
+    model_stats = {}
     for data_point in data_points:
         model_stats[f"{data_point}"] = \
             data_rpm_stat[

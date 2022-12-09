@@ -32,8 +32,6 @@ mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['font.family'] = 'Arial'
 mpl.rcParams['grid.alpha'] = 0.5
-# mpl.use('Agg')
-mpl.use('TkAgg')
 font = {'size': 42,
         'family': "Arial"}
 mpl.rc('font', **font)
@@ -109,7 +107,8 @@ def obtain_reconstructed_amplitude(figure_number, sinusoid_f, sampling_f, amplit
         f.subplots_adjust(left=0.085, top=0.94, right=0.98, bottom=0.13)
         plt.grid(True)
         leg = plt.legend(markerscale=2)
-        # change the line width for the legend
+
+        # Change the line width for the legend
         for line in leg.get_lines():
             line.set_linewidth(4.0)
 
@@ -140,6 +139,8 @@ def obtain_reconstructed_amplitude(figure_number, sinusoid_f, sampling_f, amplit
         f.subplots_adjust(left=0.085, top=0.94, right=0.98, bottom=0.13)
         plt.grid(True)
         leg = plt.legend(markerscale=2, ncol=2)
+
+        # Change the line width for the legend
         for line in leg.get_lines():
             line.set_linewidth(4.0)
 
@@ -151,19 +152,24 @@ def analyse_noise(figure_number, scenario_data, start, end, step):
     Function to plot what is the mean and standard deviation of the reconstructed oscillations' amplitude for different
     values of white noise in the signal
     :param figure_number: number of the next figure
-    :param scenario_data: the ground truth information of the signal to reconstruct
+    :param scenario_data: the ground truth information of the signal to reconstruct (not the same as the signal data)
     :param start: the start of the white noise standard deviation range
     :param end: the end of the white noise standard deviation range
     :param step: the step of the white noise standard deviation range
     :return:
     """
+    # Create list of white noise standard deviations
     std_lst = np.arange(start, end, step)
     reconstructed_amplitude_mean_lst = np.zeros(len(std_lst))
     reconstructed_amplitude_std_lst = np.zeros(len(std_lst))
     amplitude_lst = np.zeros(100)
     counter = 0
+
+    # Iterating over all the standard deviations
     for std in std_lst:
         scenario_data[5] = std
+
+        # Run a 100 random scenarios in order to retrieve a mean and standard deviation
         for i in range(100):
             figure_number, reconstructed_amplitude = obtain_reconstructed_amplitude(figure_number, *scenario_data)
             amplitude_lst[i] = reconstructed_amplitude
@@ -172,33 +178,39 @@ def analyse_noise(figure_number, scenario_data, start, end, step):
         reconstructed_amplitude_std_lst[counter] = amplitude_std
         counter += 1
 
+    # Plot the distributions with an errorbar figure
     f = plt.figure(figure_number)
     figure_number += 1
     plt.errorbar(std_lst, reconstructed_amplitude_mean_lst, yerr=reconstructed_amplitude_std_lst * 1.96,
                      color="#d62728", capsize=4, marker="o", markersize=10, alpha=0.5)
     plt.axhline(scenario_data[2], color="k", linestyle="--")
-    # plt.plot(std_lst, reconstructed_amplitude_mean_lst)
-    # plt.axhline(scenario_data[2], color='r', linestyle='--')
-    # plt.plot(std_lst, scenario_data[2]+1.96*std_lst, 'go')
     plt.xlabel("Sinusoid white noise standard deviation [-]")
     plt.ylabel("Reconstructed amplitude [-]")
     plt.grid(True)
     f.subplots_adjust(left=0.1, top=0.94, right=0.98, bottom=0.13)
+    ax = plt.gca()
+    ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
     return figure_number, reconstructed_amplitude_mean_lst
 
 
-def discover_t_std(file="b0_a0_w0_r900.csv"):
+def discover_t_std(preprocessed_data_directory, file="b0_a0_w0_r900.csv"):
     """
     Function to discover what is the sampling frequency and the deviation from that frequency in the form of a standard
     deviaton
+    :param preprocessed_data_directory: directory where the pre-processed data is located. The variable "file" should
+    be in this directory
     :param file: name of the file to be used for the computation of the aforementioned parameters.
     :return:
     """
-    folder = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\" \
-             "2nd Campaign\\Data\\2_Pre-processed_data_files"
-    raw_data = pd.read_csv(os.path.join(folder, file))
+    raw_data = pd.read_csv(os.path.join(preprocessed_data_directory, file))
+
+    # Obtain the timestamps at which the thrust is measured
     time_stamps = raw_data['Time (s)'][raw_data['Thrust (N)'].notna()]
+
+    # Make the first time step as the 0s timestep
     time_steps = [time_stamps.iloc[i] - time_stamps.iloc[i - 1] for i in range(1, len(time_stamps))]
+
+    # Retrieve the mean and the standard deviation
     time_mu, time_std = norm.fit(time_steps)
     print(f"sampling_f={1/time_mu} and time_std={time_std}")
     return 1/time_mu, time_std
@@ -211,17 +223,17 @@ if __name__ == "__main__":
     figure_number = 1
     std_start = 0
     std_step = 0.0001
-    std_end = 0.02+std_step
+    std_end = 0.01+std_step
+    folder = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\" \
+             "2nd Campaign\\Data\\2_Pre-processed_data_files"
 
     # Obtain scenario data
     scenario_data = select_scenario(chosen_scenario)
     scenario_data.append(switch_plotting)
-    # figure_number, reconstructed_amplitude = obtain_reconstructed_amplitude(figure_number, *scenario_data)
+    figure_number, reconstructed_amplitude = obtain_reconstructed_amplitude(figure_number, *scenario_data)
 
     # Plot effect of noise
-    sampling_f, time_std = discover_t_std()
+    sampling_f, time_std = discover_t_std(folder)
     scenario_data[1] = sampling_f
     scenario_data[6] = time_std
     analyse_noise(figure_number, scenario_data, std_start, std_end, std_step)
-
-

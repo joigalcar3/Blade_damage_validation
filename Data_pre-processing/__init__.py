@@ -1,3 +1,18 @@
+#!/usr/bin/env python3
+"""
+Script to run the data pre-processing pipeline
+"""
+
+__author__ = "Jose Ignacio de Alvear Cardenas"
+__copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
+__credits__ = ["Jose Ignacio de Alvear Cardenas"]
+__license__ = "MIT"
+__version__ = "1.0.1 (04/04/2022)"
+__maintainer__ = "Jose Ignacio de Alvear Cardenas"
+__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
+__status__ = "Development"
+
+# Imports
 import os
 import shutil
 

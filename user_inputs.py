@@ -14,10 +14,10 @@ __status__ = "Development"
 
 
 # General inputs
-b = 10                           # blade damage
+b = 0                           # blade damage
 w = 2                           # wind speed
 alpha_angle_lst = [0, 15, 30, 45, 60, 75, 90]  # 0, 15, 30, 45, 60, 75, 90
-rpm_lst = [300, 500, 700, 900, 1100]  # 300, 500, 700, 900, 1100
+rpm_lst = [700]  # 300, 500, 700, 900, 1100
 user_choice = False              # whether the user choice should be run instead of the predetermined configurations
 switch_val_error_bars = True     # whether the validation error bars should be plotted
 
@@ -37,10 +37,10 @@ switch_data_statistics = False   # activate the computation of data statistics
 switch_data_analysis = True         # whether the data should be analysed to create the plots
 switch_error_percentage = True  # whether the error should be relative (True) or absolute (False)
 plot_single_damage = True           # whether only one damage should be plotted or multiple for comparison
-plot_single_windspeed = False         # whether the specified windspeed should be plotted or all of them for comparison
-switch_amplitude = True             # activate the plot of the amplitude instead of the mean
+plot_single_windspeed = True         # whether the specified windspeed should be plotted or all of them for comparison
+switch_amplitude = False             # activate the plot of the amplitude instead of the mean
 switch_plot_alpha_angles = True      # activate the plot of the angles with transparencies
-switch_plot_stds = True             # activate that the standard deviation whiskers are plotted
+switch_plot_stds = False             # activate that the standard deviation whiskers are plotted
 comment = ""
 
 # Multiple damage input
