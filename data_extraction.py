@@ -4,28 +4,29 @@ Retrieves the data from the pre-processed files, including the signal reconstruc
 files of the format "bx_rpms" within the "Data_storage" folder.
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 # Imports
+import os
+import numpy as np
 import pandas as pd
-from Blade_damage.user_input import *
-from Blade_damage.helper_func import *
+import matplotlib as mpl
+from Blade_damage.user_input import dt
 from helper_funcs import compute_BET_signals, obtain_wind_correction, experimental_data_extraction
 from damaged_prop_signal_id import damaged_prop_signal_id
 
 mpl.use('TkAgg')
 
-folder_files = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data" \
-               "\\2nd Campaign\\Data\\2_Pre-processed_data_files"
-folder_files_np = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data" \
-                  "\\2nd Campaign\\Data\\2_Pre-processed_data_files\\No_propeller"
+# Data filepath
+folder_files = "Data_pre-processing\\Data\\2_Pre-processed_data_files"
+folder_files_np = "Data_pre-processing\\Data\\2_Pre-processed_data_files\\No_propeller"
 
 
 def data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed_lst, rpm_lst,
@@ -42,11 +43,11 @@ def data_extraction(figure_number, blade_damage_lst, alpha_angle_lst, wind_speed
     :param switch_plot_models: whether to plot the thrust and torque data from the models
     :param switch_wind_correction: whether the signals should be corrected with the data from the wind tunnel without
     the propeller
-    :param data_file_name:
+    :param data_file_name: the name of the file where the data table will be stored within Data_storage
     :param switch_plot_fft: whether to plot the FFT signal
     :param switch_plot_sinusoid_id: whether to plot the identified sinusoid with PSO or LS
     :param id_type: identification method used
-    :return:
+    :return: the number of the next figure to be plotted
     """
     data_table = []
 

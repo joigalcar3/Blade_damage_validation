@@ -6,20 +6,22 @@ absolute and the relative error when comparing the experimental data obtained fo
 the models.
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
+# Imports
+import os
+import numpy as np
 import pandas as pd
 import matplotlib as mpl
 from scipy.stats import norm
 mpl.use('TkAgg')
-from Blade_damage.helper_func import *
 
 # Create all possible data combinations
 abbreviations = ["T", "N"]
@@ -46,7 +48,7 @@ def compute_rpm_data_statistics(filename_input, blade_damage=None, comment="", f
     :param blade_damage: the percentage of blade damage
     :param comment: whether the name of the output file should have any comment
     :param filename_output: the name of the output file
-    :return:
+    :return: None
     """
     # Extraction of the processed data
     df = pd.read_csv(os.path.join("Data_storage", filename_input + ".csv"))
@@ -128,7 +130,7 @@ def compute_signal_stats(column_name, model_data, validation_data):
     :param column_name: the name of the column where the data comes from
     :param model_data: the data obtained from the model
     :param validation_data: the data from the experiment
-    :return:
+    :return: statistical information
     """
     # Computation of the models line approximations
     model_m, model_b = 0, 0
@@ -151,7 +153,7 @@ def compute_signal_stats(column_name, model_data, validation_data):
 
 
 if __name__ == "__main__":
-    filename_input = "b25_a90_w0"
-    blade_damage = 25
-    comment = "_a90_w0"
-    compute_rpm_data_statistics(filename_input, blade_damage=blade_damage, comment=comment)
+    fi = "b25_a90_w0"
+    b = 25
+    comm = "_a90_w0"
+    compute_rpm_data_statistics(fi, blade_damage=b, comment=comm)

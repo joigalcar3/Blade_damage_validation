@@ -3,14 +3,14 @@
 Script to change the default filenames that are obtained from the Tyto stand by using the comments on the outputted file
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 # Imports
 import os
@@ -24,7 +24,7 @@ def change_file_name(folder, file, new_folder):
     :param folder: directory of the original file
     :param file: name of the original file
     :param new_folder: directory where the new file should be saved
-    :return:
+    :return: None
     """
     file_path = os.path.join(folder, file)
     contents = pd.read_csv(file_path)
@@ -71,10 +71,8 @@ def change_file_name(folder, file, new_folder):
 
 
 if __name__ == "__main__":
-    wd = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\2nd Campaign" \
-         "\\Data\\Test files"
-    nwd = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\2nd Campaign" \
-          "\\Data\\Test_files_correct_names"
+    wd = "Data_pre-processing\\Data\\Test files"
+    nwd = "Data_pre-processing\\Data\\Test_files_correct_names"
     filenames = os.listdir(wd)
     for f in filenames:
         change_file_name(wd, f, nwd)

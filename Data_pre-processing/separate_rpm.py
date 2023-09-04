@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 """
-File to divide a single file into multiple ones with different rpm values.
+File to divide a single file into multiple ones with different rpm values. As a result, each file has a different blade
+damage (b), wind speed (w), propeller incidence angle (a) and propeller rotational speed (r).
 
 A single file is usually divided into 5 files, one for each of the following rpm values: 300, 500, 700, 900 and 1100 rpm
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 import pandas as pd
-import scipy.signal as ss
 import numpy as np
-from sklearn.neighbors import KernelDensity
 import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -38,14 +37,14 @@ mpl.rc('font', **font)
 def separate_rpm(filename, figure_number, original_folder, destination_folder, plotting=False):
     """
     Divides the data within a single file into multiple files with different values of propeller rotational speed.
-    Normally, one file would be dividided into 5 files, each corresponding to rotational speed values of 300, 500, 700,
+    Normally, one file would be divided into 5 files, each corresponding to rotational speed values of 300, 500, 700,
     900 and 1100 rpms.
     :param filename: name of the file
     :param figure_number: the figure number to be used for the next figure generation
     :param original_folder: the directory where the input file is located
     :param destination_folder: the directory where the output file should be located
     :param plotting: whether the ESC and rpm division should be plotted (used for the paper's figures)
-    :return:
+    :return: the number of the next figure to be generated
     """
     print(f"Separating rpms of: {filename}")
     # Obtain information data
@@ -94,14 +93,14 @@ def separate_rpm(filename, figure_number, original_folder, destination_folder, p
         constant_rpm_intervals.append(esc_section)
         constant_rpm_timestamps.append(np.arange(left_index, esc_indeces[-1] + 1))
         if plotting:
-            plt.plot(content['Time (s)'][np.arange(left_index, esc_indeces[-1] + 1)], esc_section, linestyle='--', label=f"{esc}",
-                     linewidth=4)
+            plt.plot(content['Time (s)'][np.arange(left_index, esc_indeces[-1] + 1)], esc_section, linestyle='--',
+                     label=f"{esc}", linewidth=4)
 
     # Plotting
     rpms = [300, 500, 700, 900, 1100]
     if plotting:
         # Plotting the intervals in the ESC domain
-        # plt.title("Selected timestamps for analysis")
+        # plt.title("Selected timestamps for analysis")  # commented out for the generation of paper figures
         plt.ylabel("ESC value [µs]")
         plt.xlabel("Time [s]")
         plt.grid(True)
@@ -114,9 +113,9 @@ def separate_rpm(filename, figure_number, original_folder, destination_folder, p
         figure_number += 1
         plt.plot(content['Time (s)'], content["Motor Electrical Speed (rad/s)"], alpha=0.5, linewidth=4)
         for counter, rpm_interval in enumerate(constant_rpm_timestamps):
-            plt.plot(content['Time (s)'][rpm_interval], content["Motor Electrical Speed (rad/s)"][rpm_interval], linestyle='--', label=str(rpms[counter]),
-                     linewidth=4)
-        # plt.title("Selected rpm intervals for analysis")
+            plt.plot(content['Time (s)'][rpm_interval], content["Motor Electrical Speed (rad/s)"][rpm_interval],
+                     linestyle='--', label=str(rpms[counter]), linewidth=4)
+        # plt.title("Selected rpm intervals for analysis")  # commented out for the generation of paper figures
         plt.ylabel("Motor Electrical Speed [rad/s]")
         plt.xlabel("Time [s]")
         plt.grid(True)
@@ -138,10 +137,8 @@ def separate_rpm(filename, figure_number, original_folder, destination_folder, p
 
 if __name__ == "__main__":
     # User input
-    of = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\2nd Campaign\\" \
-         "Data\\Test_files_correct_names"
-    df = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\2nd Campaign\\" \
-         "Data\\Test_files_correct_names_separated"
+    of = "Data_pre-processing\\Data\\Test_files_correct_names"
+    df = "Data_pre-processing\\Data\\Test_files_correct_names_separated"
     a = 90
     w = 12
     b = 25

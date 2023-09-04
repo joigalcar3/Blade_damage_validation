@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 """
-File that contains the help functions for the data extraction, statistical analysis and plotting
+File that contains the help functions for the data extraction, statistical analysis and plotting.
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 # Imports
+import os
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from scipy.fft import fft, fftfreq
 from Blade_damage.Propeller import Propeller
-from Blade_damage.user_input import *
-from Blade_damage.helper_func import *
+from Blade_damage.user_input import n_blades, chord_lengths_rt_lst, length_trapezoids_rt_lst, radius_hub,\
+    propeller_mass, percentage_hub_m, angle_first_blade, start_twist, finish_twist, switch_chords_twist_plotting,\
+    n_blade_segment_lst, attitude, cla_coeffs, cda_coeffs, pqr, rho, total_time
+from Blade_damage.helper_func import compute_average_chords, FM_time_simulation
 
 
 def experimental_data_extraction(figure_number, blade_damage, alpha_angle, wind_speed, rpm, folder_files,
@@ -33,7 +38,8 @@ def experimental_data_extraction(figure_number, blade_damage, alpha_angle, wind_
     :param switch_plot_experimental_validation: whether the experimental validation data (rpm, thrust and torque)
     should be plotted
     :param switch_print: whether information should be printed to the screen
-    :return:
+    :return: number of the next figure, the raw file content, average rpms registered in the file run, mean and standard
+    deviation of the thrust and the torque
     """
     # Obtain the information from the validation wind tunnel experiments
     # Obtain the wind uncorrected thrust and torque
@@ -95,8 +101,9 @@ def compute_BET_signals(figure_number, blade_damage, alpha_angle, wind_speed, rp
     :param alpha_angle: the angle of the propeller rotational plane
     :param wind_speed: the speed of the wind
     :param rpms: the rpms at which the propeller was rotating
+    :param dt: time step for BET time simulation of forces and moments
     :param switch_plot_models: whether to plot the force and moment diagrams from the BET model
-    :return:
+    :return: the number of the next figure, the thrust and the torque of the BET and gray-box aerodynamic model (Matlab)
     """
     # Obtaining the information from the BET model
     # Obtain the information from the blade damage model
@@ -124,29 +131,16 @@ def compute_BET_signals(figure_number, blade_damage, alpha_angle, wind_speed, rp
     if abs(body_velocity[2, 0]) < 1e-12: body_velocity[2, 0] = 0
 
     # Computation of forces and moments from the mass and aerodynamic effects
-    n_points = int(total_time / dt + 1)
-    F_healthy_lst = np.zeros((3, n_points))
-    M_healthy_lst = np.zeros((3, n_points))
-    rotation_angle_lst = np.zeros(n_points)
-    rotation_angle = 0
-    propeller.set_rotation_angle(0)
-    for i in range(n_points):
-        if not i % 10:
-            print(f'Iteration {i} out of {n_points - 1}')
+    propeller_func_input = {"number_sections": n_blade_segment, "omega": rpms, "cla_coeffs": cla_coeffs,
+                            "cda_coeffs": cda_coeffs, "body_velocity": body_velocity, "pqr": pqr, "rho": rho,
+                            "attitude": attitude, "total_time": total_time, "dt": dt,
+                            "n_points": int(total_time / dt + 1), "rotation_angle": 0}
+    F_healthy_lst, M_healthy_lst = FM_time_simulation(propeller, propeller.compute_mass_aero_healthy_FM,
+                                                      propeller_func_input, mass_aero="t",
+                                                      switch_plot=switch_plot_models)
 
-        F, M = propeller.compute_mass_aero_healthy_FM(n_blade_segment, rpms, attitude, cla_coeffs, cda_coeffs,
-                                                      body_velocity, pqr, rho)
-
-        F_healthy_lst[:, i] = F.flatten()
-        M_healthy_lst[:, i] = M.flatten()
-        rotation_angle_lst[i] = rotation_angle
-        rotation_angle = propeller.update_rotation_angle(rpms, dt)
-
-    # Plot the forces and moments
-    if switch_plot_models:
-        plot_FM(np.arange(0, total_time + dt, dt), rotation_angle_lst, F_healthy_lst,
-                M_healthy_lst, mass_aero='t')
-        figure_number += 3
+    # Add 3 to the figure counter if plotting
+    if switch_plot_models: figure_number += 3
 
     # Also return the information of the Matlab model when needed
     T, N = 0, 0
@@ -164,24 +158,24 @@ def pso_cost_function(x, sinusoid_f, time_lst, data_lst, mean_sinusoid):
     :param time_lst: the time stamps at which experimental data was collected
     :param data_lst: the collected experimental data
     :param mean_sinusoid: the mean of the sinusoidal signal
-    :return:
+    :return: the current cost value
     """
-    A = x[0]
-    phase = x[1]
+    A = x[0]  # the first parameter to optimize is the amplitude of the sinusoid
+    phase = x[1]  # the second parameter to optimize is the phase of the sinusoid
     current_prediction = mean_sinusoid + A * np.sin(sinusoid_f * time_lst + phase)
-    cost_value = np.sqrt(np.sum(np.square(current_prediction - np.array(data_lst)))/len(current_prediction))
+    cost_value = np.sqrt(np.sum(np.square(current_prediction - np.array(data_lst))) / len(current_prediction))
     return cost_value
 
 
 def frequency_extraction(figure_number, signal, dt, switch_plot_fft=False, n_points=None):
     """
-    Extract the frequency of a signal
+    Extract the frequency of a signal using the Fast Fourier Transform
     :param figure_number: the number of the next figure to plot
     :param signal: the signal from which the frequency should be extracted
     :param dt: the time that has passed between sample and sample
     :param switch_plot_fft: whether to plot the FFT
     :param n_points: number of the signal datapoints to use for the FFT
-    :return:
+    :return: number of the next figure and the frequency with the largest value from the FFT.
     """
     # When the number is not specified, then the whole signal is chosen
     if n_points is None:
@@ -195,7 +189,7 @@ def frequency_extraction(figure_number, signal, dt, switch_plot_fft=False, n_poi
     if switch_plot_fft:
         plt.figure(figure_number)
         figure_number += 1
-        plt.plot(xf, 2.0/n_points * np.abs(yf), color="r", marker="o")
+        plt.plot(xf, 2.0 / n_points * np.abs(yf), color="r", marker="o")
         plt.ylabel("Amplitude [-]")
         plt.xlabel("Frequency [rad/s]")
         plt.grid()
@@ -210,15 +204,15 @@ def obtain_wind_correction(figure_number, alpha_angle, wind_speed, folder_files_
                            switch_wind_correction=True, switch_plot_experimental_validation=False,
                            switch_print_info=False):
     """
-    Computes the wind corrections for a signal
-    :param: figure_number: number of the next figure to be plotted
+    Computes the wind corrections for a signal.
+    :param figure_number: number of the next figure to be plotted
     :param alpha_angle: the angle of the propeller plane with respect to the airflow
     :param wind_speed: the speed of the wind
     :param folder_files_np: the directory where the no propeller files are stored
     :param switch_wind_correction: whether there should be a wind correction
     :param switch_plot_experimental_validation: whether the thrust and torque wind data corrections should be plotted
     :param switch_print_info: whether the retrieved wind information should be displayed
-    :return:
+    :return: number of the next figure, the mean and standard deviation of the thrust and torque wind corrections
     """
     if switch_wind_correction:
         # Obtain forces and moments of the wind on the test stand without propeller
@@ -260,5 +254,6 @@ def obtain_wind_correction(figure_number, alpha_angle, wind_speed, folder_files_
             plt.xlabel("Samples [-]")
             plt.ylabel("\\tau [Nm]")
             plt.grid(True)
-        return figure_number, mean_wind_correction_thrust, mean_wind_correction_torque, std_wind_correction_thrust, std_wind_correction_torque
+        return figure_number, mean_wind_correction_thrust, mean_wind_correction_torque, \
+               std_wind_correction_thrust, std_wind_correction_torque
     return figure_number, 0, 0, 0, 0

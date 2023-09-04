@@ -3,14 +3,14 @@
 Provides the functions to plot the processed experimental and model data.
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 
 # Imports
@@ -35,6 +35,7 @@ mpl.rc('font', **font)
 
 # Creating naming and dictionaries
 abbreviations = ["T", "N"]
+plotting_abbreviations = {"T": "T", "N": "Q"}
 wrench_names = {"T": "thrust", "N": "torque"}
 wrench_units = {"T": "N", "N": "Nm"}
 data_points = ["mu", "std", "m", "b", "tol"]
@@ -50,7 +51,10 @@ brown_color_hex, brown_color_rgb = '#8c564b', [i / 255 for i in [140, 86, 75]]
 pink_color_hex, pink_color_rgb = '#e377c2', [i / 255 for i in [227, 119, 194]]
 colors_hex = [red_color_hex, blue_color_hex, green_color_hex, orange_color_hex, purple_color_hex, brown_color_hex,
               pink_color_hex]
+# colors_hex = [blue_color_hex, green_color_hex, orange_color_hex, purple_color_hex, brown_color_hex,
+#               pink_color_hex]
 markers = ["o", "v", "s", "P", "*", "x", "<"]
+# markers = ["v", "s", "P", "*", "x", "<"]
 
 
 def plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind_speed_lst, rpm_lst,
@@ -85,7 +89,7 @@ def plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind
     # Whether the error computed is absolute or relative and the mean or amplitude are plotted
     dict_keys_txt, mean_or_amplitude, comment = check_amp_rel(switch_error_percentage, switch_amplitude, comment)
 
-    # Plot for every wind speed and rpm in their respective lists
+    # Plot for every wind speed and rpm considered
     for wind_speed in wind_speed_lst:
         for rpm in rpm_lst:
             # Retrieving the data for the specific scenario
@@ -178,6 +182,7 @@ def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_er
     # Plot the errors
     for counter_ax, ax_name in enumerate(ax_lst):
         abbreviation = abbreviations[counter_ax]
+        plotting_abbreviation = plotting_abbreviations[abbreviation]
         wrench_unit = wrench_units[abbreviation]
         for counter_model, model_name in enumerate(models_stats.keys()):
             wrench_data = models_stats[model_name][abbreviation]
@@ -197,7 +202,7 @@ def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_er
                                  markersize=10, alpha=0.5, label=signal_label)
             else:
                 ax_name.plot(rpms, wrench_data["mus"], color=colors_hex[counter_model], marker=markers[counter_model],
-                             markersize=20, alpha=0.5, label=signal_label)
+                             markersize=10, alpha=0.5, label=signal_label)
 
         ax_name.grid(True)
         ax_name.ticklabel_format(axis="y", style="sci", scilimits=(0, 3))
@@ -205,21 +210,21 @@ def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_er
         # Include the y-label
         if switch_error_percentage:
             if switch_subtract_no_damage:
-                ax_name.set_ylabel(f"{abbreviation} $\Delta$error [%]")
+                ax_name.set_ylabel(f"${plotting_abbreviation}$ $\Delta$error [%]")
             else:
-                ax_name.set_ylabel(f"{abbreviation} error [%]")
+                ax_name.set_ylabel(f"${plotting_abbreviation}$ error [%]")
         else:
             if switch_subtract_no_damage:
-                ax_name.set_ylabel(f"{abbreviation} $\Delta$error [{wrench_unit}]")
+                ax_name.set_ylabel(f"${plotting_abbreviation}$ $\Delta$error [{wrench_unit}]")
             else:
-                ax_name.set_ylabel(f"{abbreviation} error [{wrench_unit}]")
+                ax_name.set_ylabel(f"${plotting_abbreviation}$ error [{wrench_unit}]")
         ax_name.yaxis.set_label_coords(-0.1, 0.5)
 
         # Include legend
         if counter_ax == 0:
             # ax_name.legend(markerscale=2, ncol=ncol, loc=1)   # position legend in the top right corner
-            ax_name.legend(markerscale=2, ncol=ncol)      # dont provide lengend position
-            # ax_name.legend(markerscale=2, ncol=ncol, loc="lower left")    # position the legend in the lower left
+            # ax_name.legend(markerscale=2, ncol=ncol)      # dont provide lengend position
+            ax_name.legend(markerscale=2, ncol=ncol, loc="lower left")    # position the legend in the lower left
 
             # Create space on the upper space of the frame for the legend
             # ax_name.set_ylim((ax_name.get_ylim()[0], ax_name.get_ylim()[1] * 2))
@@ -533,7 +538,7 @@ def plot_rpms_windspeeds(figure_number, filenames, blade_damage, model, wind_spe
                 mus = data_stat[f"{model}_mu_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
                 stds = data_stat[f"{model}_std_{abbreviation}{dict_keys_txt['amp']}{dict_keys_txt['rel']}"].to_numpy()
                 model_stats[abbreviation] = {"rpms": rpms, "mus": mus, "stds": stds, "blade_damage": blade_damage}
-            models_stats[f"w={wind_speed}"] = model_stats
+            models_stats[f"$V_\infty$={wind_speed}"] = model_stats
 
     # Obtain the filename to save the figure
     plot_name = os.path.join(f"b{blade_damage}",
@@ -564,7 +569,11 @@ def check_amp_rel(switch_error_percentage, switch_amplitude, comment):
     Check whether it is desired to plot the amplitude or the mean and the absolute or relative error
     :param switch_error_percentage: whether the relative error should be computed instead of the absolute error
     :param switch_amplitude: whether the amplitude should be plotted instead of the mean
-    :return:
+    :param comment: text that contains information about the plot and that is added to the filename
+    :return: dictionary containing the text that indicates whether the error is relative or absolute and whether the
+    amplitude is evaluated instead of the mean, dictionary containing whether the mean or the amplitude is desired to be
+    plotted of the validation and model data, the comment variable that contains the text that is added to the filename
+    of the plot given the information plotted.
     """
     # Whether the error computed is absolute or relative
     error_percentage_txt = ""
@@ -635,41 +644,41 @@ if __name__ == "__main__":
     # User_input
     plot_single_damage = False
     plot_single_windspeed = True
-    switch_error_percentage = True
-    switch_amplitude = False
-    switch_val_error_bars = False
-    switch_plot_alpha_angles = True
-    switch_subtract_no_damage = True
-    switch_plot_stds = False
+    s_error_percentage = True
+    s_amplitude = False
+    s_val_error_bars = False
+    s_plot_alpha_angles = True
+    s_subtract_no_damage = True
+    s_plot_stds = False
 
-    blade_damage = 25
-    filename_input_data = f"b{blade_damage}"
+    bd = 25
+    fn_input_data = f"b{bd}"
     # filename_input_data = "b25_a90_w0"
-    filename_input_stat = f"b{blade_damage}_rpms"
+    fn_input_stat = f"b{bd}_rpms"
     # filename_input_stat = "b25_a90_w0_rpms"
 
-    wind_speed_lst = [2, 4, 6, 9, 12]  # (0), 2, 4, 6, 9, 12
-    rpm_lst = [300, 500, 700, 900, 1100]
+    w_lst = [2, 4, 6, 9, 12]  # (0), 2, 4, 6, 9, 12
+    r_lst = [300, 500, 700, 900, 1100]
     blade_damage_compare = [0, 10, 25]
-    comment = ""
-    figure_number = 1
+    comm = ""
+    fig_number = 1
     if plot_single_windspeed:
         if plot_single_damage:
-            plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind_speed_lst, rpm_lst,
-                            switch_plot_alpha_angles=switch_plot_alpha_angles, switch_amplitude=switch_amplitude,
-                            switch_val_error_bars=switch_val_error_bars, switch_error_percentage=switch_error_percentage,
-                            comment=comment)
+            plot_statistics(fn_input_stat, fn_input_data, bd, w_lst, r_lst,
+                            switch_plot_alpha_angles=s_plot_alpha_angles, switch_amplitude=s_amplitude,
+                            switch_val_error_bars=s_val_error_bars, switch_error_percentage=s_error_percentage,
+                            comment=comm)
         else:
             filenames = [f"b{b}" for b in blade_damage_compare]
             # filenames = [f"b{b}_a90_w0" for b in blade_damage_compare]
-            data_damage_comparison(figure_number, wind_speed_lst, rpm_lst, filenames,
-                                   switch_error_percentage=switch_error_percentage,
-                                   switch_val_error_bars=switch_val_error_bars,
-                                   switch_plot_alpha_angles=switch_plot_alpha_angles,
-                                   switch_subtract_no_damage=switch_subtract_no_damage,
-                                   switch_plot_stds=switch_plot_stds)
+            data_damage_comparison(fig_number, w_lst, r_lst, filenames,
+                                   switch_error_percentage=s_error_percentage,
+                                   switch_val_error_bars=s_val_error_bars,
+                                   switch_plot_alpha_angles=s_plot_alpha_angles,
+                                   switch_subtract_no_damage=s_subtract_no_damage,
+                                   switch_plot_stds=s_plot_stds)
     else:
-        model = "BET"
-        filename_input_data = [f"b{blade_damage}_a90_w0", filename_input_data]
-        figure_number = plot_rpms_windspeeds(figure_number, filename_input_data, blade_damage, model, wind_speed_lst,
-                                             comment, switch_error_percentage, switch_amplitude)
+        model_name = "BET"
+        fn_input_data = [f"b{bd}_a90_w0", fn_input_data]
+        fig_number = plot_rpms_windspeeds(fig_number, fn_input_data, bd, model_name, w_lst,
+                                             comm, s_error_percentage, s_amplitude)

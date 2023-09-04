@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Provides the code for extracting the required information and analysing it. There are different pre-defined inputs
+Provides the code for data extraction and analysis. There are different pre-defined inputs
 depending on the damage and the wind speed.
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 # Imports
 from compute_rpm_data_statistics import compute_rpm_data_statistics
@@ -20,7 +20,7 @@ from user_inputs import *
 from data_extraction import data_extraction
 
 
-# Initial set-up and computations
+# Initial set-up
 figure_number = 1
 relative_comment = ""
 if switch_error_percentage:
@@ -86,8 +86,7 @@ elif user_choice:
     wind_speed_lst = [2]  # (0), 2, 4, 6, 9, 12
     switch_wind_correction = True
     # data_file_name = f"b{blade_damage_lst[0]}"
-    # data_file_name = f"b0_a{alpha_angle_lst[0]}_w0"
-    data_file_name = "dummy2"
+    data_file_name = f"b0_a{alpha_angle_lst[0]}_w0"
     filename_input_data = f"b{b}"  # name of the input file of raw data
     # filename_input_data = "b25_a90_w0"
     filename_input_stat = f"b{b}_rpms"  # name of the input file of statistics
@@ -95,6 +94,9 @@ elif user_choice:
     filename_input_data_multiple_wind = [f"b{b}_a90_w0", filename_input_data]  # list of files provided as input
     filenames = [f"b{b}" for b in blade_damage_compare]
     # filenames = [f"b{b}_a90_w0" for b in blade_damage_compare]
+
+else:
+    raise ValueError(f"The user choice:{user_choice}, is invalid.")
 
 # Data extraction
 if switch_data_extraction:

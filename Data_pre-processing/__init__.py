@@ -3,14 +3,14 @@
 Script to run the data pre-processing pipeline
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 # Imports
 import os
@@ -20,12 +20,9 @@ from .change_file_names import change_file_name
 from .separate_rpm import separate_rpm
 
 # Folders to work with
-in_folder = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\2nd Campaign" \
-     "\\Data\\1_Raw_data_files"
-temp_folder = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data" \
-              "\\2nd Campaign\\Data\\2_Pre-processed_data_files\\Temp"
-out_folder = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data" \
-              "\\2nd Campaign\\Data\\2_Pre-processed_data_files"
+in_folder = "Data_pre-processing\\Data\\1_Raw_data_files"
+temp_folder = "Data_pre-processing\\Data\\2_Pre-processed_data_files\\Temp"
+out_folder = "Data_pre-processing\\Data\\2_Pre-processed_data_files"
 
 shutil.rmtree(temp_folder)
 shutil.rmtree(out_folder)

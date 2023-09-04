@@ -14,7 +14,7 @@ __status__ = "Development"
 
 
 # General inputs
-b = 0                           # blade damage
+b = 10                           # blade damage
 w = 2                           # wind speed
 alpha_angle_lst = [0, 15, 30, 45, 60, 75, 90]  # 0, 15, 30, 45, 60, 75, 90
 rpm_lst = [700]  # 300, 500, 700, 900, 1100
@@ -38,16 +38,16 @@ switch_data_analysis = True         # whether the data should be analysed to cre
 switch_error_percentage = True  # whether the error should be relative (True) or absolute (False)
 plot_single_damage = True           # whether only one damage should be plotted or multiple for comparison
 plot_single_windspeed = True         # whether the specified windspeed should be plotted or all of them for comparison
-switch_amplitude = False             # activate the plot of the amplitude instead of the mean
+switch_amplitude = True             # activate the plot of the amplitude instead of the mean
 switch_plot_alpha_angles = True      # activate the plot of the angles with transparencies
-switch_plot_stds = False             # activate that the standard deviation whiskers are plotted
-comment = ""
+switch_plot_stds = True             # activate that the standard deviation whiskers are plotted
+comment = "_PSO"
 
 # Multiple damage input
 switch_blade_damage_comparison = False  # whether the results with different blade damages should be plotted
-blade_damage_compare = [0, 10, 25]  # the blade damages to compare
-switch_subtract_no_damage = True       # activate that the 0% damage is subtracted from the damaged scenarios
+blade_damage_compare = [0, 10, 25]      # the blade damages to compare
+switch_subtract_no_damage = False       # activate that the 0% damage is subtracted from the damaged scenarios
 
 # Multiple wind speeds input
-model = "BET"                                                  # name of the model being analysed from the data
+model = "BET"                           # name of the model being analysed from the data
 

@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 """
-Carries out the identification or the reconstruction of the sinusoid from experimental data
+Carries out the identification or the reconstruction of the sinusoid from experimental data.
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 # Imports
+import os
+import numpy as np
 import pandas as pd
+import matplotlib as mpl
 from scipy import signal
+import matplotlib.pyplot as plt
 from astropy.timeseries import LombScargle
 from pyswarm import pso
-from Blade_damage.user_input import *
-from Blade_damage.helper_func import *
+from Blade_damage.user_input import dt, total_time
 from helper_funcs import compute_BET_signals, pso_cost_function, obtain_wind_correction, experimental_data_extraction, \
     frequency_extraction
 
@@ -37,7 +40,8 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
     :param switch_plot_fft: whether the fft of the BET signal should be plotted
     :param switch_plot_sinusoid_id: whether the identified sinusoid should be plotted
     :param id_type: the type of identification for the signal
-    :return:
+    :return: the number of the next figure, the mean and amplitude of the BET signal, and the mean and amplitude of the
+    experimental signal
     """
     time = content['Time (s)']
 
@@ -51,7 +55,7 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
     else:
         raise ValueError(f"The selected signal ({signal_name}) does not exist.")
 
-    # Apply the wind corrections to the signal
+    # Apply the wind corrections to the signal and detrend it
     wrench_signal = wrench_signal[wrench_signal.notna()] - mean_wind_correction
     wrench_signal_mean = wrench_signal.mean()
     wrench_signal_numpy = wrench_signal.to_numpy()
@@ -60,7 +64,7 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
     sampled_times = time[np.asarray(wrench_signal.keys())].to_numpy()
     sampled_times -= sampled_times[0]
 
-    # Plot the data from validation and the detrended data
+    # Plot the data from validation and the detrended data. Figure 9.58 in thesis.
     if switch_plot_sinusoid_id:
         time_local = time - time.iloc[0]
         time_local = time_local[wrench_signal.notna().index]
@@ -72,7 +76,8 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
         plt.scatter(time_local, wrench_signal, color="#1f77b4", marker="o", label="Data")
         plt.scatter(time_local, detrended_wrench_signal, color="#d62728", marker="o", label="Detrended data")
         plt.plot(time_local, wrench_b+wrench_m*time_local, color="#1f77b4", linestyle="--", linewidth=4)
-        plt.plot(time_local, detrended_wrench_b + detrended_wrench_m * time_local, color="#d62728", linestyle="--", linewidth=4)
+        plt.plot(time_local, detrended_wrench_b + detrended_wrench_m * time_local, color="#d62728", linestyle="--",
+                 linewidth=4)
         plt.ylabel("Thrust [N]")
         plt.xlabel("Time [s]")
         plt.grid(True)
@@ -95,6 +100,7 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
                       "data_lst": detrended_wrench_signal, "mean_sinusoid": wrench_signal_mean}
             xopt, fopt = pso(pso_cost_function, lb, ub, debug=True, swarmsize=5000, maxiter=20, kwargs=kwargs)
             wrench_signal_amplitude = xopt[0]
+            wrench_signal_phase = xopt[1]
 
         # Apply Lomb-Scargle periodogram
         elif id_type == "LS":
@@ -105,6 +111,7 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
             y_fit = ls.model(t_fit, largest_frequency_wrench_signal/(2*np.pi))
             reconstructed_amplitude = (max(y_fit) - min(y_fit)) / 2
             wrench_signal_amplitude = reconstructed_amplitude
+            wrench_signal_phase = np.arcsin(y_fit[0]/wrench_signal_amplitude)
         else:
             raise ValueError(f"The id_type {id_type} is not expected.")
 
@@ -141,8 +148,9 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
 
             # Plotting the approximated signal
             plt.plot(np.arange(0, np.max(sampled_times), dt), wrench_signal_mean +
-                     xopt[0] * np.sin(largest_frequency_wrench_signal * np.arange(0, np.max(sampled_times), dt) + xopt[1]),
-                     "r-")
+                     wrench_signal_amplitude *
+                     np.sin(largest_frequency_wrench_signal * np.arange(0, np.max(sampled_times), dt) +
+                            wrench_signal_phase), "r-")
             plt.xlabel("Timestamp [s]")
             plt.ylabel(plot_ylabel)
             plt.grid(True)
@@ -154,12 +162,9 @@ def damaged_prop_signal_id(fn, content, signal_name, mean_wind_correction, BET_m
 
 
 if __name__ == "__main__":
-    folder_files = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data" \
-                   "\\2nd Campaign\\Data\\2_Pre-processed_data_files"
-    folder_files_np = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data" \
-                      "\\2nd Campaign\\Data\\2_Pre-processed_data_files\\No_propeller"
-    folder_data_storage = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data" \
-                          "\\2nd Campaign\\Code\\Blade_damage_validation\\Data_storage"
+    folder_files = "Data_pre-processing\\Data\\2_Pre-processed_data_files"
+    folder_files_np = "Data_pre-processing\\Data\\2_Pre-processed_data_files\\No_propeller"
+    folder_data_storage = "Data_storage"
 
     # User input
     blade_damage = 25  # 0, 10, 25
