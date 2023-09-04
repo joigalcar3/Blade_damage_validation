@@ -3,21 +3,21 @@
 Contains function that calls for the specific scenario to simulate for the Lomb-Scargle periodogram testing.
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 
 def select_scenario(chosen_scenario):
     """
     Function that contains the parameters for each of the scenarios
     :param chosen_scenario: number of the chosen scenario
-    :return:
+    :return: list with all the parameters
     """
     # Scenario 1: Figure 9.30 in thesis - \Delta Fz
     if chosen_scenario == 1:

@@ -6,14 +6,14 @@ shows the reconstructed amplitude with respect to the standard deviation of the 
 clean sinusoid.
 """
 
-__author__ = "Jose Ignacio de Alvear Cardenas"
+__author__ = "Jose Ignacio de Alvear Cardenas (GitHub: @joigalcar3)"
 __copyright__ = "Copyright 2022, Jose Ignacio de Alvear Cardenas"
 __credits__ = ["Jose Ignacio de Alvear Cardenas"]
 __license__ = "MIT"
-__version__ = "1.0.1 (04/04/2022)"
+__version__ = "1.0.2 (21/12/2022)"
 __maintainer__ = "Jose Ignacio de Alvear Cardenas"
-__email__ = "j.i.dealvearcardenas@student.tudelft.nl"
-__status__ = "Development"
+__email__ = "jialvear@hotmail.com"
+__status__ = "Stable"
 
 
 import numpy as np
@@ -38,8 +38,8 @@ mpl.rc('font', **font)
 
 
 # Functions
-def obtain_reconstructed_amplitude(figure_number, sinusoid_f, sampling_f, amplitude, bias, phase, std, time_std, max_time,
-                                   switch_time_innaccuracy, switch_plotting):
+def obtain_reconstructed_amplitude(figure_number, sinusoid_f, sampling_f, amplitude, bias, phase, std, time_std,
+                                   max_time, switch_time_inaccuracy, switch_plotting):
     """
     Reconstructs a sinusoid and provides the amplitude of the reconstructed signal
     :param figure_number: number of the next figure
@@ -51,28 +51,28 @@ def obtain_reconstructed_amplitude(figure_number, sinusoid_f, sampling_f, amplit
     :param std: standard deviation of the Gaussian noise polluting the sinusoid
     :param time_std: standard deviation of the Gaussian noise polluting the sampling time
     :param max_time: maximum time that the sinusoid will be running for
-    :param switch_time_innaccuracy: whether the time innacuracy should be introduced, meaning polluting the sampling
+    :param switch_time_inaccuracy: whether the time inaccuracy should be introduced, meaning polluting the sampling
     time with Gaussian noise
     :param switch_plotting: whether plots should be generated
-    :return:
+    :return: number of the next figure and the magnitude of the Lomb-Scargle reconstructed amplitude
     """
-    def sample_noisy_sinusoid(x, A, f, bias, phase, std):
+    def sample_noisy_sinusoid(x, A, fq, B, phi, noise_std):
         """
         Provides a time step of a sinusoid signal with white noise
         :param x: time step
         :param A: amplitude
-        :param f: sine frequency
-        :param bias: signal vertical displacement
-        :param phase: phase of the signal
-        :param std: standard deviation for the Gaussian noise sampling
-        :return:
+        :param fq: sine frequency
+        :param B: signal vertical displacement (bias)
+        :param phi: phase of the signal
+        :param noise_std: standard deviation for the Gaussian noise sampling
+        :return: single time step of the noisy sinusoid
         """
-        omega = 2 * np.pi * f
-        noise = np.random.normal(0, std)
-        return bias + A*np.sin(omega*x + np.deg2rad(phase)) + noise #+ 2*A*np.sin(omega*x/2 + np.deg2rad(phase))
+        omega = 2 * np.pi * fq
+        noise = np.random.normal(0, noise_std)
+        return B + A*np.sin(omega*x + np.deg2rad(phi)) + noise  # 2*A*np.sin(omega*x/2 + np.deg2rad(phase))
 
     # Check whether time error should be applied
-    if not switch_time_innaccuracy:
+    if not switch_time_inaccuracy:
         time_std = 0
 
     # Generating the noisy signal
@@ -89,7 +89,7 @@ def obtain_reconstructed_amplitude(figure_number, sinusoid_f, sampling_f, amplit
     print(f"Actual sinusoid amplitude: {amplitude}. Reconstructed amplitude: {reconstructed_amplitude}. Std = {std}")
 
     if switch_plotting:
-        # Generate plot with original sinusoid and samples
+        # Generate plot with original sinusoid and samples. Used for the generation of Figure F.1 in thesis
         f = plt.figure(figure_number)
         ax = plt.gca()
         figure_number += 1
@@ -100,7 +100,8 @@ def obtain_reconstructed_amplitude(figure_number, sinusoid_f, sampling_f, amplit
                                  for i in sinusoid_time], color="#1f77b4", alpha=0.5, label="Noisy signal")
         plt.plot(sinusoid_time, [sample_noisy_sinusoid(i, amplitude, sinusoid_f, bias, phase, 0)
                                  for i in sinusoid_time], color="#d62728", alpha=0.5)
-        plt.plot(np.array(t)[np.array(t) <= 0.5], np.array(y)[np.array(t) <= 0.5], 'o', color="#2ca02c", markersize=10, label="Noisy signal samples")
+        plt.plot(np.array(t)[np.array(t) <= 0.5], np.array(y)[np.array(t) <= 0.5], 'o', color="#2ca02c", markersize=10,
+                 label="Noisy signal samples")
         plt.xlabel("Time [s]")
         plt.ylabel("Thrust [N]")
         ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 3))
@@ -118,7 +119,7 @@ def obtain_reconstructed_amplitude(figure_number, sinusoid_f, sampling_f, amplit
         plt.plot(frequency, power)
         plt.grid(True)
 
-        # Plot the fitted sinusoid
+        # Plot the fitted sinusoid. Used for the generation of Figure F.2 in thesis
         f = plt.figure(figure_number)
         ax = plt.gca()
         figure_number += 1
@@ -156,7 +157,7 @@ def analyse_noise(figure_number, scenario_data, start, end, step):
     :param start: the start of the white noise standard deviation range
     :param end: the end of the white noise standard deviation range
     :param step: the step of the white noise standard deviation range
-    :return:
+    :return: number of next figure and mean reconstructed amplitude for the different degrees of white noise std
     """
     # Create list of white noise standard deviations
     std_lst = np.arange(start, end, step)
@@ -178,11 +179,11 @@ def analyse_noise(figure_number, scenario_data, start, end, step):
         reconstructed_amplitude_std_lst[counter] = amplitude_std
         counter += 1
 
-    # Plot the distributions with an errorbar figure
+    # Plot the distributions with an error bar figure. Used for the generation of Figure F.3 in thesis
     f = plt.figure(figure_number)
     figure_number += 1
     plt.errorbar(std_lst, reconstructed_amplitude_mean_lst, yerr=reconstructed_amplitude_std_lst * 1.96,
-                     color="#d62728", capsize=4, marker="o", markersize=10, alpha=0.5)
+                 color="#d62728", capsize=4, marker="o", markersize=10, alpha=0.5)
     plt.axhline(scenario_data[2], color="k", linestyle="--")
     plt.xlabel("Sinusoid white noise standard deviation [-]")
     plt.ylabel("Reconstructed amplitude [-]")
@@ -196,11 +197,11 @@ def analyse_noise(figure_number, scenario_data, start, end, step):
 def discover_t_std(preprocessed_data_directory, file="b0_a0_w0_r900.csv"):
     """
     Function to discover what is the sampling frequency and the deviation from that frequency in the form of a standard
-    deviaton
+    deviation
     :param preprocessed_data_directory: directory where the pre-processed data is located. The variable "file" should
     be in this directory
     :param file: name of the file to be used for the computation of the aforementioned parameters.
-    :return:
+    :return: the average sampling frequency and the standard deviation of the sampling frequency
     """
     raw_data = pd.read_csv(os.path.join(preprocessed_data_directory, file))
 
@@ -219,21 +220,20 @@ def discover_t_std(preprocessed_data_directory, file="b0_a0_w0_r900.csv"):
 if __name__ == "__main__":
     # User input
     chosen_scenario = 3
-    switch_plotting = False
-    figure_number = 1
+    s_plotting = False
+    fig_number = 1
     std_start = 0
     std_step = 0.0001
     std_end = 0.01+std_step
-    folder = "C:\\Users\\jialv\\OneDrive\\2020-2021\\Thesis project\\3_Execution_phase\\Wind tunnel data\\" \
-             "2nd Campaign\\Data\\2_Pre-processed_data_files"
+    folder = "Data_pre-processing\\Data\\2_Pre-processed_data_files"
 
     # Obtain scenario data
-    scenario_data = select_scenario(chosen_scenario)
-    scenario_data.append(switch_plotting)
-    figure_number, reconstructed_amplitude = obtain_reconstructed_amplitude(figure_number, *scenario_data)
+    scen_data = select_scenario(chosen_scenario)
+    scen_data.append(s_plotting)
+    fig_number, reconstructed_A = obtain_reconstructed_amplitude(fig_number, *scen_data)
 
     # Plot effect of noise
-    sampling_f, time_std = discover_t_std(folder)
-    scenario_data[1] = sampling_f
-    scenario_data[6] = time_std
-    analyse_noise(figure_number, scenario_data, std_start, std_end, std_step)
+    samp_f, t_std = discover_t_std(folder)
+    scen_data[1] = samp_f
+    scen_data[6] = t_std
+    analyse_noise(fig_number, scen_data, std_start, std_end, std_step)

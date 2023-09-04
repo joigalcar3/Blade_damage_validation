@@ -74,7 +74,7 @@ def plot_statistics(filename_input_stat, filename_input_data, blade_damage, wind
     :param switch_val_error_bars: whether the experimental 2 x sigma whiskers should be plotted
     :param switch_error_percentage: whether the relative error should be plotted instead of the absolute error
     :param comment: whether any text should be added at the end of the file name
-    :return:
+    :return: the number of the next figure
     """
     # Obtain data and its statistics
     df_stat = pd.read_csv(os.path.join("Data_storage", filename_input_stat + ".csv"))
@@ -168,9 +168,9 @@ def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_er
     :param plot_name: the name of the plot that should be produced as output
     :param switch_error_percentage: whether the relative error is plotted instead of the absolute error
     :param ncol: number of columns in the legend when plotting
-    :param switch_subtract_no_damage: whether the plotted data had the no damage data subtracted
     :param switch_plot_stds: whether the whiskers denoting the stds should be plotted
-    :return:
+    :param switch_subtract_no_damage: whether the plotted data had the no damage data subtracted
+    :return: number of the next figure
     """
     # Create figure
     f, ax_lst = plt.subplots(2, 1, sharex=True, gridspec_kw={'wspace': 0.5, 'hspace': 0.2}, num=figure_number)
@@ -242,14 +242,16 @@ def rpm_error_plotter(figure_number, models_stats, plot_name="dummy2", switch_er
 def data_pd_plotter(models_stats, figure_number, plot_name="dummy", data_type="T", alpha_angle=None,
                     switch_error_percentage=False):
     """
-    Plot the experimental and model data as well as the error in the form of probabilistic distribution
+    Plot the experimental and model data as well as the error in the form of probabilistic distribution. It is used
+    to create all the plots similar to Figure 42 and 43 of the paper: "Blade Element Theory Model for UAV Blade Damage
+    Simulation".
     :param models_stats: dictionary with the models data
     :param figure_number: number of the next figure to plot
     :param plot_name: name of the plot
     :param data_type: whether thrust or torque would be plotted
     :param alpha_angle: the alpha angles of the data
     :param switch_error_percentage: whether the error data should be relative instead of absolute
-    :return:
+    :return: the number of the next figure
     """
     # Computation of the constant line
     all_validation_data = np.concatenate([models_stats[key]["validation_data"] for key in models_stats.keys()])
@@ -390,9 +392,11 @@ def data_damage_comparison(figure_number, wind_speed_lst, rpm_lst, filenames, co
     visible
     :param switch_error_percentage: whether the error should be plotted as relative instead of absolute
     :param switch_amplitude: whether the amplitude should be plotted instead of the mean
-    :param switch_plot_rpms: to switch on a plot of the mean and standard error for the different rpms
+    :param switch_val_error_bars: whether to experimental error should be computed
+    :param switch_subtract_no_damage: whether the error in the scenario with no damage needs to be subtracted from the
+    damaged scenarios
     :param switch_plot_stds: whether the stds whickers are plotted
-    :return:
+    :return: number of the next figure
     """
     # Obtaining the blade damages
     blade_damages = []
@@ -438,8 +442,8 @@ def data_damage_comparison(figure_number, wind_speed_lst, rpm_lst, filenames, co
                         alpha_angle = None
 
                     model_stats, _ = create_model_stats("BET", data_rpm_data, data_rpm_stat, mean_or_amplitude,
-                                                        abbreviation, wrench_name, switch_val_error_bars, switch_amplitude,
-                                                        dict_keys_txt)
+                                                        abbreviation, wrench_name, switch_val_error_bars,
+                                                        switch_amplitude, dict_keys_txt)
                     models_stats[f"BET model: {blade_damage}%"] = model_stats
 
                 # File name
@@ -506,8 +510,8 @@ def data_damage_comparison(figure_number, wind_speed_lst, rpm_lst, filenames, co
     return figure_number
 
 
-def plot_rpms_windspeeds(figure_number, filenames, blade_damage, model, wind_speed_lst, comment, switch_error_percentage,
-                      switch_amplitude):
+def plot_rpms_windspeeds(figure_number, filenames, blade_damage, model, wind_speed_lst, comment,
+                         switch_error_percentage, switch_amplitude):
     """
     Plot the wrenches (absolute or relative) error with respect to the rpms for the different wind speeds in a single
     plot
@@ -519,7 +523,7 @@ def plot_rpms_windspeeds(figure_number, filenames, blade_damage, model, wind_spe
     :param comment: whether a comment should be added at the end of the plot name
     :param switch_error_percentage: whether the error should be absolute or relative
     :param switch_amplitude: whether the mean or the amplitude of the signals errors should be plotted
-    :return:
+    :return: the number of the next figure
     """
     dict_keys_txt, mean_or_amplitude, comment = check_amp_rel(switch_error_percentage, switch_amplitude, comment)
     models_stats = {}
@@ -555,7 +559,7 @@ def filter_data(filename, filters):
     Function to import data and filter it
     :param filename: name of the file
     :param filters: filters to be applied in the form of a dictionary
-    :return:
+    :return: data frame with filtered data
     """
     df = pd.read_csv(os.path.join("Data_storage", filename + ".csv"))
     if len(filters.keys()) == 0:
@@ -610,7 +614,7 @@ def create_model_stats(model, data_rpm_data, data_rpm_stat, mean_or_amplitude, a
     :param switch_val_error_bars: whether to experimental error should be computed
     :param switch_amplitude: whether the amplitude is computed instead of the mean
     :param dict_keys_txt: dictionary of dictionary key components
-    :return:
+    :return: dictionary with all the statistical data, raw data and error data, also the name of the model
     """
     # Extracting experimental data
     corrected_experimental_data_mean = \
@@ -669,16 +673,16 @@ if __name__ == "__main__":
                             switch_val_error_bars=s_val_error_bars, switch_error_percentage=s_error_percentage,
                             comment=comm)
         else:
-            filenames = [f"b{b}" for b in blade_damage_compare]
-            # filenames = [f"b{b}_a90_w0" for b in blade_damage_compare]
-            data_damage_comparison(fig_number, w_lst, r_lst, filenames,
+            fns = [f"b{b}" for b in blade_damage_compare]
+            # fns = [f"b{b}_a90_w0" for b in blade_damage_compare]
+            data_damage_comparison(fig_number, w_lst, r_lst, fns,
                                    switch_error_percentage=s_error_percentage,
                                    switch_val_error_bars=s_val_error_bars,
                                    switch_plot_alpha_angles=s_plot_alpha_angles,
                                    switch_subtract_no_damage=s_subtract_no_damage,
                                    switch_plot_stds=s_plot_stds)
     else:
-        model_name = "BET"
+        m_name = "BET"
         fn_input_data = [f"b{bd}_a90_w0", fn_input_data]
-        fig_number = plot_rpms_windspeeds(fig_number, fn_input_data, bd, model_name, w_lst,
+        fig_number = plot_rpms_windspeeds(fig_number, fn_input_data, bd, m_name, w_lst,
                                              comm, s_error_percentage, s_amplitude)
