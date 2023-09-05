@@ -1,5 +1,5 @@
 # Blade_damage_validation
-![record screenshot](docs/Experimental_campaign.png)
+![record screenshot](docs/Experimental_campaign_reduced.png)
 
 This work provides the tools for the validation of the Blade Element Theory model proposed in the paper: "Blade Element
 Theory Model for UAV Blade Damage Simulation". This entails the extraction, processing and visualization of wrench 
